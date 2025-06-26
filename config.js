@@ -11,7 +11,7 @@ const supabase = createClient(
 // Obtiene configuración por slug (ej: /cliente-x)
 export async function getClientConfig(slug) {
   const { data, error } = await supabase
-    .from('appointment_config')
+    .from('clients')
     .select('max_per_day, max_per_hour, duration_minutes')
     .eq('slug', slug)
     .single();

@@ -7,7 +7,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 export async function getConfigBySlug(slug) {
   const { data, error } = await supabase
-    .from('appointment_configs')
+    .from('clients')
     .select('*')
     .eq('slug', slug)
     .single();
