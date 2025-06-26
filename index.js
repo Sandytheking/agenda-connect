@@ -1,18 +1,21 @@
+// index.js
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
 import querystring from 'querystring';
+import { createClient } from '@supabase/supabase-js';
 
+// Importar rutas externas
+import disponibilidadRoutes from './routes/disponibilidad.js';
 
-
-// Cargar variables de entorno desde .env
+// Cargar variables de entorno
 dotenv.config();
 
 // Crear cliente de Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY // o SUPABASE_KEY si usas anon
 );
 
 // Configuración de Google OAuth
@@ -48,12 +51,7 @@ app.get('/auth/callback', (req, res) => {
   res.send(`✅ Código recibido: ${code}`);
 });
 
-// Escuchar en el puerto definido
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor activo en http://localhost:${PORT}`);
-});
-
+// 👉 Ruta para obtener configuración del cliente por slug
 app.get('/api/config/:slug', async (req, res) => {
   const slug = req.params.slug;
 
@@ -73,4 +71,13 @@ app.get('/api/config/:slug', async (req, res) => {
     console.error('❌ Error en /api/config/:slug', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
+});
+
+// 👉 Montar rutas adicionales desde carpeta /routes
+app.use('/', disponibilidadRoutes);
+
+// Iniciar servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Servidor activo en http://localhost:${PORT}`);
 });
