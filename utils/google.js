@@ -19,10 +19,18 @@ export async function getAccessToken(refresh_token) {
 export async function getEventsForDay(accessToken, date) {
   console.log("🔐 Usando access_token:", accessToken?.slice(0, 20), "...");
 
-  const calendar = google.calendar({
-    version: 'v3',
-    auth: accessToken
-  });
+  const oAuth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET
+);
+
+oAuth2Client.setCredentials({ access_token: accessToken });
+
+const calendar = google.calendar({
+  version: 'v3',
+  auth: oAuth2Client  // ✅ correcto
+});
+
 
   const start = new Date(date);
   start.setHours(0, 0, 0, 0);
