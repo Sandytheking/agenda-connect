@@ -5,9 +5,10 @@ dotenv.config();
 
 export async function getAccessToken(refresh_token) {
   const oAuth2Client = new google.auth.OAuth2(
-    process.env.CLIENT_ID,
-    process.env.CLIENT_SECRET
-  );
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET
+);
+
 
   oAuth2Client.setCredentials({ refresh_token });
 
