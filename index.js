@@ -7,6 +7,8 @@ import querystring from 'querystring';
 import { createClient } from '@supabase/supabase-js';
 import disponibilidadRoutes from './routes/disponibilidad.js';
 import fetch from 'node-fetch'; // asegúrate de tener esto instalado si usas Node <18
+import crearCitaRoutes from './routes/crearCita.js';
+
 
 // Cargar variables de entorno
 dotenv.config();
@@ -30,6 +32,15 @@ const SCOPES = [
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor activo en http://localhost:${PORT}`);
+});
+
+// Montar rutas
+app.use('/', disponibilidadRoutes);
+app.use('/', crearCitaRoutes);  // ← asegúrate de tener esta línea
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
