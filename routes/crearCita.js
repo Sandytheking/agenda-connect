@@ -1,6 +1,6 @@
 // 📁 routes/crearCita.js
 import express from 'express';
-import { getClientConfigBySlug } from '../supabase/client.js';
+import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
 import { google } from 'googleapis';
 
@@ -16,7 +16,7 @@ router.post('/:slug/crear-cita', async (req, res) => {
 
   try {
     // 1. Leer configuración del cliente (incluye refresh_token)
-    const config = await getClientConfigBySlug(slug);
+    const config = await getConfigBySlug(slug);
     if (!config || !config.refresh_token) {
       return res.status(404).json({ error: 'Negocio no encontrado o sin token' });
     }
