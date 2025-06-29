@@ -3,10 +3,11 @@ import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
 import { google } from 'googleapis';
+import { verifyAuth } from '../middleware/verifyAuth.js';
 
 const router = express.Router();
 
-router.post('/:slug/crear-cita', async (req, res) => {
+router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
   const slug = req.params.slug;
   const { name, email, phone, date, time } = req.body;
 
@@ -15,16 +16,13 @@ router.post('/:slug/crear-cita', async (req, res) => {
   }
 
   try {
-    // 1. Leer configuración del cliente (incluye refresh_token)
     const config = await getConfigBySlug(slug);
     if (!config || !config.refresh_token) {
       return res.status(404).json({ error: 'Negocio no encontrado o sin token' });
     }
 
-    // 2. Obtener access_token desde refresh_token
     const accessToken = await getAccessToken(config.refresh_token);
 
-    // 3. Verificar disponibilidad antes de agendar
     const eventos = await getEventsForDay(accessToken, date);
     const [h, m] = time.split(":").map(Number);
     const start = new Date(date);
@@ -41,7 +39,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
       return res.status(409).json({ error: 'Ya hay una cita en ese horario' });
     }
 
-    // 4. Crear OAuth2Client para Google Calendar
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
@@ -49,7 +46,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: accessToken });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    // 5. Crear evento en Google Calendar
     const evento = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
