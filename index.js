@@ -8,6 +8,9 @@ import { createClient } from '@supabase/supabase-js';
 import disponibilidadRoutes from './routes/disponibilidad.js';
 import fetch from 'node-fetch'; // asegúrate de tener esto instalado si usas Node <18
 import crearCitaRoutes from './routes/crearCita.js';
+import configRoutes from './routes/config.js';
+
+
 
 
 // Cargar variables de entorno
@@ -37,6 +40,7 @@ app.use(express.json());
 // Montar rutas
 app.use('/', disponibilidadRoutes);
 app.use('/', crearCitaRoutes);  // ← asegúrate de tener esta línea
+app.use('/', configRoutes);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
