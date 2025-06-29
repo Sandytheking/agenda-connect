@@ -1,6 +1,7 @@
 // 📁 routes/config.js
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from '../middleware/verifyAuth.js';
 
 const router = express.Router();
 
@@ -10,8 +11,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 👉 Obtener configuración del cliente por slug
-router.get('/api/config/:slug', async (req, res) => {
+// 👉 Obtener configuración del cliente por slug (protegido)
+router.get('/api/config/:slug', verifyAuth, async (req, res) => {
   const slug = req.params.slug;
 
   try {
@@ -32,8 +33,8 @@ router.get('/api/config/:slug', async (req, res) => {
   }
 });
 
-// 👉 Actualizar configuración del cliente por slug
-router.put('/api/config/:slug', async (req, res) => {
+// 👉 Actualizar configuración del cliente por slug (protegido)
+router.put('/api/config/:slug', verifyAuth, async (req, res) => {
   const slug = req.params.slug;
   const { max_per_day, max_per_hour, duration_minutes } = req.body;
 
