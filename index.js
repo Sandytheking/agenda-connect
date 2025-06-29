@@ -10,6 +10,9 @@ import fetch from 'node-fetch'; // asegúrate de tener esto instalado si usas No
 import crearCitaRoutes from './routes/crearCita.js';
 import configRoutes from './routes/config.js';
 import authRoutes from './routes/auth.js';
+import registroRoutes from './routes/registro.js';
+
+
 
 
 
@@ -45,6 +48,7 @@ app.use('/', disponibilidadRoutes);
 app.use('/', crearCitaRoutes);  // ← asegúrate de tener esta línea
 app.use('/', configRoutes);
 app.use('/', authRoutes);
+app.use('/', registroRoutes);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
