@@ -10,6 +10,28 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// 👉 Obtener configuración del cliente por slug
+router.get('/api/config/:slug', async (req, res) => {
+  const slug = req.params.slug;
+
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('max_per_day, max_per_hour, duration_minutes')
+      .eq('slug', slug)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: "Configuración no encontrada" });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error("❌ Error interno en GET /api/config/:slug", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 // 👉 Actualizar configuración del cliente por slug
 router.put('/api/config/:slug', async (req, res) => {
   const slug = req.params.slug;
