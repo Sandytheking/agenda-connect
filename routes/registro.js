@@ -19,6 +19,17 @@ router.post('/api/registro', async (req, res) => {
   }
 
   try {
+    // Verificar si el slug ya existe
+    const { data: existing, error: queryError } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (existing) {
+      return res.status(409).json({ error: 'El slug ya está en uso. Elige otro.' });
+    }
+
     // 1. Crear usuario en Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
@@ -28,7 +39,7 @@ router.post('/api/registro', async (req, res) => {
 
     if (authError) {
       console.error('❌ Error al crear usuario Auth:', authError);
-      return res.status(400).json({ error: 'No se pudo crear el usuario. ¿Ya existe?' });
+      return res.status(400).json({ error: 'No se pudo crear el usuario. ¿Ya existe ese correo?' });
     }
 
     // 2. Insertar en tabla clients con slug y valores iniciales
