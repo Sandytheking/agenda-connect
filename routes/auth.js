@@ -19,7 +19,7 @@ router.post('/api/login', async (req, res) => {
   }
 
   try {
-    const authRes = await fetch('https://'+process.env.SUPABASE_PROJECT_ID+'.supabase.co/auth/v1/token?grant_type=password', {
+    const authRes = await fetch(process.env.SUPABASE_URL + '/auth/v1/token?grant_type=password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
