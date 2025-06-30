@@ -64,19 +64,6 @@ router.post('/api/registro', async (req, res) => {
   }
 });
 
-router.get('/api/test-admin-auth', async (req, res) => {
-  try {
-    const { data: users, error } = await supabase.auth.admin.listUsers();
-    
-    if (error) {
-      return res.status(401).json({ error: '❌ La clave no tiene permisos de admin' });
-    }
-
-    res.json({ success: true, total: users.length });
-  } catch (err) {
-    res.status(500).json({ error: '❌ Error inesperado', details: err });
-  }
-});
 
 
 export default router;
