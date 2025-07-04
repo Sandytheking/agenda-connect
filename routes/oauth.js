@@ -13,9 +13,9 @@ router.get('/api/oauth/start', (req, res) => {
 
   const scope = [
     'https://www.googleapis.com/auth/calendar',
-    'https://www.googleapis.com/auth/calendar.events'
-    'email' 
-    'https://www.googleapis.com/auth/userinfo.email'
+    'https://www.googleapis.com/auth/calendar.events',
+    'email', 
+    'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile'
   ].join(' ');
 
