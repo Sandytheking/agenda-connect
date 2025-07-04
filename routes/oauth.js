@@ -14,6 +14,9 @@ router.get('/api/oauth/start', (req, res) => {
   const scope = [
     'https://www.googleapis.com/auth/calendar',
     'https://www.googleapis.com/auth/calendar.events'
+    'email' 
+    'https://www.googleapis.com/auth/userinfo.email'
+    'https://www.googleapis.com/auth/userinfo.profile'
   ].join(' ');
 
   const url = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${slug}`;
@@ -44,8 +47,9 @@ router.get('/api/oauth/callback', async (req, res) => {
     const accessToken  = data.access_token;
 
     // Obtener email del usuario
-    const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${accessToken}` }
+    console.log("🔑 accessToken:", accessToken);
+    const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+     headers: { Authorization: `Bearer ${accessToken}` }
     });
 
     const userInfo = await userInfoRes.json();
