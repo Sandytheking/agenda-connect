@@ -49,7 +49,9 @@ router.get('/api/oauth/callback', async (req, res) => {
     });
 
     const userInfo = await userInfoRes.json();
+    console.log("👤 userInfo:", userInfo);
     const email = userInfo.email;
+
 
     // Guardar refresh_token en Supabase
     const { error } = await supabase
