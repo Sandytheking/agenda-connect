@@ -52,6 +52,13 @@ if (!slug) {
   $('#btn').disabled = true;
 }
 
+if (!slug) {
+  $('#msg').textContent = '❌ Falta slug';
+  $('#btn').disabled = true;
+} else {
+  $('#msg').textContent = `🔎 Buscando «${slug}»…`;   // ← verás qué valor lee
+}
+
 
 let cfg = null;
 
