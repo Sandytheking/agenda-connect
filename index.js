@@ -47,6 +47,8 @@ app.use('/', authRoutes);
 app.use('/', registroRoutes);
 app.use('/', oauthRoutes);   
 app.use("/", slugRoutes); 
+app.use(express.static('public'));   // ← ya sirve archivos estáticos
+
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
