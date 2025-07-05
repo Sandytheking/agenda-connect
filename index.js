@@ -50,7 +50,7 @@ app.use('/', configRoutes);
 app.use('/', authRoutes);
 app.use('/', registroRoutes);
 app.use('/', oauthRoutes);   
-app.use("/", slugRoutes); 
+app.use('/', slugRoutes); 
 app.use('/', citasRoutes);
 app.use('/', publicConfigRoutes);
 
