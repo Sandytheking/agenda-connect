@@ -1,95 +1,97 @@
-// 📁 routes/disponibilidad.js         
+// 📁 routes/disponibilidad.js          (ES Module)
 import express from 'express';
 import { getConfigBySlug }      from '../supabaseClient.js';
-import { getAccessToken, getEventsForDay }      from '../utils/google.js';
+import { getAccessToken,
+         getEventsForDay }      from '../utils/google.js';
 
 const router = express.Router();
 
-// ✅ POST interna protegida (desde panel)
+/* ---------- POST /:slug/disponibilidad (versión protegida) ---------- */
 router.post('/:slug/disponibilidad', async (req, res) => {
   try {
-    const { slug } = req.params;
+    const { slug }       = req.params;
     const { date, time } = req.body;
 
-    const config = await getConfigBySlug(slug);
-    if (!config) return res.status(404).json({ available: false, message: "Negocio no encontrado" });
-
-    const { refresh_token, max_per_day, max_per_hour } = config;
-
-    const accessToken = await getAccessToken(refresh_token);
-    const eventos = await getEventsForDay(accessToken, date);
-
-    if (eventos.length >= (max_per_day || 5)) {
-      return res.json({ available: false, message: "Límite de citas alcanzado para ese día." });
+    if (!slug || !date || !time) {
+      return res.status(400).json({ available:false, message:'Faltan parámetros' });
     }
 
-    const [h, m] = time.split(':').map(Number);
-    const inicio = new Date(date);
-    inicio.setHours(h, m, 0, 0);
-    const fin = new Date(inicio.getTime() + 30 * 60000);
+    const cfg = await getConfigBySlug(slug);
+    if (!cfg || !cfg.refresh_token) {
+      return res.status(404).json({ available:false, message:'Negocio no encontrado' });
+    }
 
-    const eventosSolapados = eventos.filter(e => {
-      const start = new Date(e.start);
-      const end = new Date(e.end);
-      return start < fin && inicio < end;
+    const access = await getAccessToken(cfg.refresh_token);
+    const events = await getEventsForDay(access, date);
+
+    /* — límite diario — */
+    if (events.length >= (cfg.max_per_day ?? 5)) {
+      return res.json({ available:false, message:'Día completo' });
+    }
+
+    /* — límite por slot — */
+    const [h, m] = time.split(':').map(Number);
+    const start  = new Date(date); start.setHours(h, m, 0, 0);
+    const end    = new Date(start.getTime() + (cfg.duration_minutes ?? 30) * 60000);
+
+    const solapados = events.filter(ev => {
+      const s = new Date(ev.start), e = new Date(ev.end);
+      return s < end && start < e;
     });
 
-    if (eventosSolapados.length >= (max_per_hour || 1)) {
-      return res.json({ available: false, message: "Hora ya ocupada." });
+    if (solapados.length >= (cfg.max_per_hour ?? 1)) {
+      return res.json({ available:false, message:'Hora ocupada' });
     }
 
-    return res.json({ available: true });
+    return res.json({ available:true });
   } catch (err) {
-    console.error("Error en disponibilidad:", err);
-    res.status(500).json({ available: false, message: "Error al verificar disponibilidad." });
+    console.error('❌ disponibilidad POST:', err);
+    res.status(500).json({ available:false, message:'Error interno' });
   }
 });
 
-// ✅ GET pública (usada por formulario externo o iframe)
+/* ---------- GET /api/availability/:slug (pública p/ iframe) ---------- */
 router.get('/api/availability/:slug', async (req, res) => {
-  const { slug } = req.params;
-  const { date, time } = req.query;
-
-  if (!slug || !date || !time) {
-    return res.status(400).json({ available: false, message: 'Faltan parámetros' });
-  }
-
   try {
-    const config = await getConfigBySlug(slug);
-    if (!config || !config.refresh_token) {
-      return res.status(404).json({ available: false, message: 'Negocio no encontrado' });
+    const { slug }       = req.params;
+    const { date, time } = req.query;
+
+    if (!slug || !date || !time) {
+      return res.status(400).json({ available:false, message:'Faltan parámetros' });
     }
 
-    const { refresh_token, max_per_day, max_per_hour, duration_minutes } = config;
-    const accessToken = await getAccessToken(refresh_token);
-    const eventos = await getEventsForDay(accessToken, date);
+    const cfg = await getConfigBySlug(slug);
+    if (!cfg || !cfg.refresh_token) {
+      return res.status(404).json({ available:false, message:'Negocio no encontrado' });
+    }
 
-    if (eventos.length >= (max_per_day || 5)) {
-      return res.json({ available: false, message: 'Día completo' });
+    const access = await getAccessToken(cfg.refresh_token);
+    const events = await getEventsForDay(access, date);
+
+    /* Lógica idéntica a la de arriba … */
+    if (events.length >= (cfg.max_per_day ?? 5)) {
+      return res.json({ available:false, message:'Día completo' });
     }
 
     const [h, m] = time.split(':').map(Number);
-    const start = new Date(date); start.setHours(h, m, 0, 0);
-    const end = new Date(start.getTime() + (duration_minutes || 30) * 60000);
+    const start  = new Date(date); start.setHours(h, m, 0, 0);
+    const end    = new Date(start.getTime() + (cfg.duration_minutes ?? 30) * 60000);
 
-    const solapados = eventos.filter(e => {
-      const evStart = new Date(e.start);
-      const evEnd = new Date(e.end);
-      return evStart < end && start < evEnd;
+    const solapados = events.filter(ev => {
+      const s = new Date(ev.start), e = new Date(ev.end);
+      return s < end && start < e;
     });
 
-    if (solapados.length >= (max_per_hour || 1)) {
-      return res.json({ available: false, message: 'Hora ocupada' });
+    if (solapados.length >= (cfg.max_per_hour ?? 1)) {
+      return res.json({ available:false, message:'Hora ocupada' });
     }
 
-    return res.json({ available: true });
-
+    res.json({ available:true });
   } catch (err) {
-    console.error("❌ Error en GET availability:", err);
-    res.status(500).json({ available: false, message: 'Error al verificar' });
+    console.error('❌ disponibilidad GET:', err);
+    res.status(500).json({ available:false, message:'Error interno' });
   }
 });
 
-// ✅ exportación correcta para CommonJS
-module.exports = router;
+/* ----------------------------------------------------------- */
 export default router;
