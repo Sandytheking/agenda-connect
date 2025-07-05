@@ -14,6 +14,7 @@ const supabase = createClient(
  */
 router.get('/api/public-config/:slug', async (req, res) => {
   const { slug } = req.params;
+console.log('[public-config] slug recibido =', slug);
 
   try {
     const { data, error } = await supabase
