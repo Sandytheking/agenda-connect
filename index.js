@@ -1,11 +1,11 @@
 // index.js
 
-import express from 'express';
-import cors from 'cors';
+const express = require('express');
+const cors = require('cors');
 import dotenv from 'dotenv';
 import querystring from 'querystring';
 import { createClient } from '@supabase/supabase-js';
-import disponibilidadRoutes from './routes/disponibilidad.js';
+const disponibilidadRoutes = require('./routes/disponibilidad.js');
 import fetch from 'node-fetch'; // asegúrate de tener esto instalado si usas Node <18
 import crearCitaRoutes from './routes/crearCita.js';
 import configRoutes from './routes/config.js';
