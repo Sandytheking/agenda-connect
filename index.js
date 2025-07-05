@@ -132,8 +132,6 @@ app.get('/api/config/:slug', async (req, res) => {
   }
 });
 
-// 👉 Conectar otras rutas
-app.use('/', disponibilidadRoutes);
 
 // 👉 Iniciar servidor
 const PORT = process.env.PORT || 3000;
