@@ -12,6 +12,7 @@ import configRoutes from './routes/config.js';
 import authRoutes from './routes/auth.js';
 import registroRoutes from './routes/registro.js';
 import oauthRoutes from './routes/oauth.js'; 
+import slugRoutes       from "./routes/slug.js"; 
 
 
 // Cargar variables de entorno
@@ -45,6 +46,7 @@ app.use('/', configRoutes);
 app.use('/', authRoutes);
 app.use('/', registroRoutes);
 app.use('/', oauthRoutes);   
+app.use("/", slugRoutes); 
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
