@@ -47,6 +47,53 @@ router.post('/:slug/disponibilidad', async (req, res) => {
     console.error("Error en disponibilidad:", err);
     res.status(500).json({ available: false, message: "Error al verificar disponibilidad." });
   }
+
+  // ✅ Ruta pública GET (para iframe/formulario externo)
+router.get('/api/availability/:slug', async (req, res) => {
+  const { slug }       = req.params;
+  const { date, time } = req.query;
+
+  if (!slug || !date || !time) {
+    return res.status(400).json({ available: false, message: 'Faltan parámetros' });
+  }
+
+  try {
+    const config = await getConfigBySlug(slug);
+    if (!config || !config.refresh_token) {
+      return res.status(404).json({ available: false, message: 'Negocio no encontrado' });
+    }
+
+    const { refresh_token, max_per_day, max_per_hour, duration_minutes } = config;
+
+    const accessToken = await getAccessToken(refresh_token);
+    const eventos     = await getEventsForDay(accessToken, date);
+
+    // límite por día
+    if (eventos.length >= (max_per_day || 5)) {
+      return res.json({ available: false, message: 'Día completo' });
+    }
+
+    // verificar colisiones en esa hora
+    const [h, m] = time.split(':').map(Number);
+    const start = new Date(date); start.setHours(h, m, 0, 0);
+    const end   = new Date(start.getTime() + (duration_minutes || 30) * 60000);
+
+    const solapados = eventos.filter(e => {
+      const evStart = new Date(e.start);
+      const evEnd   = new Date(e.end);
+      return evStart < end && start < evEnd;
+    });
+
+    if (solapados.length >= (max_per_hour || 1)) {
+      return res.json({ available: false, message: 'Hora ocupada' });
+    }
+
+    return res.json({ available: true });
+
+  } catch (err) {
+    console.error("❌ Error en GET availability:", err);
+    res.status(500).json({ available: false, message: 'Error al verificar' });
+  }
 });
 
 export default router;

@@ -39,72 +39,104 @@
 </div>
 
 <script>
-// ========= utilidades pequeñas =============
-const $ = sel => document.querySelector(sel);
-const qs = new URLSearchParams(location.search);
-const slug = qs.get('slug');          // ?slug=peluqueria-jenny
-
-if(!slug){ $('#msg').textContent = 'Sin slug'; $('#btn').disabled = true; }
-
+/* ============ utilidades ============ */
+const $   = s => document.querySelector(s);
 const api = 'https://agenda-connect.onrender.com';
 
-// ========= cargar config y bloquear días =========
+/* 1️⃣  Obtener slug del path  (/cliente/<slug>)  */
+const partes = location.pathname.split('/');
+const slug   = partes[partes.length-1] || null;
+
+if (!slug) {
+  $('#msg').textContent = 'Slug no encontrado en la URL';
+  $('#btn').disabled = true;
+}
+
+/* 2️⃣  Cargar configuración pública */
 let cfg = null;
 (async () => {
-  const r = await fetch(api + `/api/config/${slug}`);
-  cfg = await r.json();
-  if(!r.ok || !cfg.nombre){ $('#msg').textContent = 'Negocio no encontrado'; return; }
+  try {
+    const r   = await fetch(`${api}/api/public-config/${slug}`);
+    cfg = await r.json();
+    if (!r.ok) throw new Error(cfg.error || 'Negocio no encontrado');
 
-  $('#negocio').textContent = `Reservar en ${cfg.nombre}`;
+    $('#negocio').textContent =
+      cfg.nombre ? `Reservar en ${cfg.nombre}` : 'Reservar cita';
 
-  // bloquear días no laborables
-  const dias = cfg.work_days || [];              // [1,2,3,4,5]
-  $('#date').addEventListener('change', e=>{
-    const day = new Date(e.target.value).getDay();
-    if(!dias.includes(day)){
-      $('#msg').textContent = '⛔ El negocio no abre ese día';
-      $('#time').innerHTML  = `<option></option>`;
-      return;
-    }
-    $('#msg').textContent = '';
-    cargarHoras(e.target.value);
-  });
+    // Bloquear fechas pasadas
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    $('#date').min = hoy.toISOString().split('T')[0];
+
+    // Días laborables (viene como array de números 0‑6)
+    $('#date').addEventListener('change', e=>{
+      const day = new Date(e.target.value).getDay();
+      if (!cfg.work_days.includes(day)) {
+        $('#msg').textContent = '⛔ El negocio no abre ese día';
+        $('#time').innerHTML  = `<option></option>`;
+      } else {
+        $('#msg').textContent = '';
+        cargarHorasDisponibles(e.target.value);
+      }
+    });
+
+  } catch (err) {
+    console.error(err);
+    $('#msg').textContent = err.message;
+    $('#btn').disabled = true;
+  }
 })();
 
-// ========= generar horarios y consultar disponibilidad =========
-async function cargarHoras(fechaStr){
-  const horarios = [];
-  const inicio = new Date(); inicio.setHours(+cfg.start_hour,0,0,0);
-  const fin    = new Date(); fin.setHours(+cfg.end_hour ,0,0,0);
-  while(inicio < fin){
-    const HH = inicio.getHours().toString().padStart(2,'0');
-    const MM = inicio.getMinutes().toString().padStart(2,'0');
-    horarios.push(`${HH}:${MM}`);
-    inicio.setMinutes(inicio.getMinutes()+ (cfg.duration_minutes||30));
-  }
+/* 3️⃣  Generar todos los slots posibles */
+function generarSlots() {
+  const out  = [];
+  const paso = Number(cfg.duration_minutes) || 30;
+  const cur  = new Date();
+  cur.setHours(+cfg.start_hour,0,0,0);
+  const fin  = new Date();
+  fin.setHours(+cfg.end_hour,0,0,0);
 
+  while (cur < fin) {
+    const HH = cur.getHours().toString().padStart(2,'0');
+    const MM = cur.getMinutes().toString().padStart(2,'0');
+    out.push(`${HH}:${MM}`);
+    cur.setMinutes(cur.getMinutes() + paso);
+  }
+  return out;
+}
+
+/* 4️⃣  Llamar al backend para saber cuáles están libres */
+async function cargarHorasDisponibles(fechaISO) {
   $('#time').innerHTML = '<option>Cargando…</option>';
+  $('#time').disabled  = true;
 
   const libres = [];
-  for(const h of horarios){
-    const res = await fetch(`${api}/api/availability/${slug}?date=${fechaStr}&time=${h}`);
-    const {available} = await res.json();
-    if(available) libres.push(h);
+  for (const h of generarSlots()) {
+    const res  = await fetch(`${api}/api/availability/${slug}?date=${fechaISO}&time=${h}`);
+    const { available } = await res.json();
+    if (available) libres.push(h);
+    const res = await fetch(`https://agenda-connect.onrender.com/api/availability/${slug}?date=2025-07-06&time=10:00`);
+const json = await res.json();
+
   }
 
   $('#time').innerHTML = libres.length
-    ? '<option></option>' + libres.map(h=>`<option value="${h}">${h}</option>`).join('')
-    : '<option>No hay horas libres</option>';
+        ? `<option value=""></option>${libres.map(h=>`<option value="${h}">${h}</option>`).join('')}`
+        : '<option>No hay horas libres</option>';
+  $('#time').disabled = !libres.length;
 }
 
-// ========= crear cita =========
+/* 5️⃣  Crear cita */
 $('#btn').onclick = async ()=>{
   const name = $('#name').value.trim();
   const email= $('#email').value.trim();
   const phone= $('#phone').value.trim();
   const date = $('#date').value;
   const time = $('#time').value;
-  if(!name||!email||!date||!time){ $('#msg').textContent = 'Completa todos los campos'; return; }
+
+  if(!name||!email||!date||!time){
+    $('#msg').textContent = 'Completa todos los campos';
+    return;
+  }
 
   $('#btn').disabled = true; $('#msg').textContent = 'Enviando…';
 

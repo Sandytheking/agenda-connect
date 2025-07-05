@@ -14,6 +14,7 @@ import registroRoutes from './routes/registro.js';
 import oauthRoutes from './routes/oauth.js'; 
 import slugRoutes       from "./routes/slug.js"; 
 import path from 'path';
+import citasRoutes from './routes/citas.js';
 
 
 // Cargar variables de entorno
@@ -49,6 +50,7 @@ app.use('/', registroRoutes);
 app.use('/', oauthRoutes);   
 app.use("/", slugRoutes); 
 app.use(express.static('public'));   // ← ya sirve archivos estáticos
+app.use('/', citasRoutes);
 
 
 // 👉 Iniciar login con Google
