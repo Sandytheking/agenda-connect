@@ -43,12 +43,15 @@ const $   = s => document.querySelector(s);
 const api = 'https://agenda-connect.onrender.com';
 
 // Obtener slug desde URL
-const partes = location.pathname.split('/');
-const slug   = partes[partes.length-1] || null;
+/* 1️⃣  Obtener slug de la query ?slug=... */
+const params = new URLSearchParams(location.search);
+const slug   = params.get('slug');        // ej. "ramon-peluqueria"
+
 if (!slug) {
-  $('#msg').textContent = 'Slug no encontrado en la URL';
+  $('#msg').textContent = 'Slug no especificado';
   $('#btn').disabled = true;
 }
+
 
 let cfg = null;
 
