@@ -92,3 +92,4 @@ router.get('/api/availability/:slug', async (req, res) => {
 
 // ✅ exportación correcta para CommonJS
 module.exports = router;
+export default router;
