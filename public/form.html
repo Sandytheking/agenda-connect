@@ -104,22 +104,21 @@ function generarSlots() {
   return out;
 }
 
-async function cargarHorasDisponibles(fechaISO) {
+async function cargarHorasDisponibles(fechaISO){
   $('#time').innerHTML = '<option>Cargando…</option>';
-  $('#time').disabled = true;
+  $('#time').disabled  = true;
 
   const libres = [];
-  for (const h of generarSlots()) {
-    const res = await fetch(`${api}/api/availability/${slug}?date=${fechaISO}&time=${h}`);
-    const { available } = await res.json();
+  for (const h of generarSlots()){
+    const r   = await fetch(`${api}/api/availability/${slug}?date=${fechaISO}&time=${h}`);
+    const { available } = await r.json();
     if (available) libres.push(h);
   }
 
   $('#time').innerHTML = libres.length
-    ? '<option value=""></option>' + libres.map(h => `<option value="${h}">${h}</option>`).join('')
-    : '<option>No hay horas libres</option>';
-
-  $('#time').disabled = libres.length === 0;
+        ? `<option value=""></option>${libres.map(h=>`<option value="${h}">${h}</option>`).join('')}`
+        : '<option>No hay horas libres</option>';
+  $('#time').disabled = !libres.length;
 }
 
 $('#btn').onclick = async () => {

@@ -15,6 +15,7 @@ import oauthRoutes from './routes/oauth.js';
 import slugRoutes  from "./routes/slug.js"; 
 import path from 'path';
 import citasRoutes from './routes/citas.js';
+import publicConfigRoutes from './routes/publicConfig.js';
 
 
 // Cargar variables de entorno
@@ -51,7 +52,7 @@ app.use('/', registroRoutes);
 app.use('/', oauthRoutes);   
 app.use("/", slugRoutes); 
 app.use('/', citasRoutes);
-
+app.use('/', publicConfigRoutes);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
