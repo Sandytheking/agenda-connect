@@ -1,7 +1,7 @@
-// routes/disponibilidad.js
-const express = require('express');
-const { getConfigBySlug } = require('../supabaseClient.js');
-const { getAccessToken, getEventsForDay } = require('../utils/google.js');
+// 📁 routes/disponibilidad.js         
+import express from 'express';
+import { getConfigBySlug }      from '../supabaseClient.js';
+import { getAccessToken, getEventsForDay }      from '../utils/google.js';
 
 const router = express.Router();
 
