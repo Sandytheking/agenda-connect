@@ -42,10 +42,16 @@ router.get('/api/public-config/:slug', async (req, res) => {
     data.max_per_day      = Number(data.max_per_day || 5);
     data.max_per_hour     = Number(data.max_per_hour || 1);
 
-    // Convertir días de texto ("Monday") a número (1=Lunes)
-    data.work_days = (data.work_days || []).map(d => diasSemana.indexOf(d));
+// Convierte ["Monday", "Tuesday"] => [1, 2]
+  const dias = {
+  Sunday: 0, Monday: 1, Tuesday: 2,
+  Wednesday: 3, Thursday: 4,
+  Friday: 5, Saturday: 6
+};
+data.work_days = (data.work_days || []).map(d => dias[d] ?? -1).filter(d => d >= 0);
 
     res.json(data);
+console.log("🔁 work_days enviados:", data.work_days);
 
   } catch (e) {
     console.error('❌ /api/public-config error:', e);

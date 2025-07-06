@@ -74,21 +74,31 @@ let cfg = null;
     const hoy = new Date(); hoy.setHours(0,0,0,0);
     $('#date').min = hoy.toISOString().split('T')[0];
 
-    const diasLaborables = (cfg.work_days || []).map(d => Number(d)); // ✅ convierte a número
+// ✅ Convertir nombres de días a números (0 = Domingo, 1 = Lunes, ...)
+   const diaMap = {
+  Sunday: 0, Monday: 1, Tuesday: 2,
+  Wednesday: 3, Thursday: 4,
+  Friday: 5, Saturday: 6
+};
 
-    $('#date').addEventListener('change', e => {
-      const fecha = new Date(e.target.value);
-      const dia = fecha.getDay();
+const diasLaborables = (cfg.work_days || [])
+  .map(d => diaMap[d])
+  .filter(n => typeof n === 'number');
+console.log("📦 work_days recibidos:", cfg.work_days);
 
-      if (!diasLaborables.includes(dia)) {
-        $('#msg').textContent = '⛔ El negocio no abre ese día';
-        $('#time').innerHTML = '<option></option>';
-        return;
-      }
+$('#date').addEventListener('change', e => {
+  const fecha = new Date(e.target.value);
+  const dia = fecha.getDay(); // 0 = Domingo … 6 = Sábado
 
-      $('#msg').textContent = '';
-      cargarHorasDisponibles(e.target.value);
-    });
+  if (!diasLaborables.includes(dia)) {
+    $('#msg').textContent = '⛔ El negocio no abre ese día';
+    $('#time').innerHTML = '<option></option>';
+    return;
+  }
+
+  $('#msg').textContent = '';
+  cargarHorasDisponibles(e.target.value);
+});
 
   } catch (err) {
     console.error(err);
