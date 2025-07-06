@@ -76,15 +76,7 @@ let cfg = null;
     $('#date').min = hoy.toISOString().split('T')[0];
 
 // ✅ Convertir nombres de días a números (0 = Domingo, 1 = Lunes, ...)
-   const diaMap = {
-  Sunday: 0, Monday: 1, Tuesday: 2,
-  Wednesday: 3, Thursday: 4,
-  Friday: 5, Saturday: 6
-};
-
-const diasLaborables = (cfg.work_days || [])
-  .map(d => diaMap[d])
-  .filter(n => typeof n === 'number');
+  const diasLaborables = cfg.work_days || [];
 console.log("📦 work_days recibidos:", cfg.work_days);
 
 $('#date').addEventListener('change', e => {
