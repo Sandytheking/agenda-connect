@@ -88,23 +88,23 @@ const diasLaborables = (cfg.work_days || [])
 console.log("📦 work_days recibidos:", cfg.work_days);
 
 $('#date').addEventListener('change', e => {
-  console.log('👉 Día elegido =', dia, '• Array permitidos =', diasLaborables);
+  if (!e.target.value) return;                 // nada seleccionado
 
-  if(!e.target.value) return;
+  // Construimos la fecha local (sin problemas de zona horaria)
+  const [y, m, d] = e.target.value.split('-').map(Number);
+  const fecha = new Date(y, m - 1, d, 12, 0, 0); // 12 h local para evitar desfases
+  const dia   = fecha.getDay();                 // 0‑6 (Dom‑Sáb)
 
-  // ⚠️  CONSTRUYE la fecha en horario local
-  const [y,m,d] = e.target.value.split('-').map(Number);
-  const fecha   = new Date(y, m-1, d, 12, 0, 0);
-  const dia     = fecha.getDay();               // 0‑6
+  console.log('👉 Día elegido =', dia, '• Laborables =', diasLaborables);
 
   if (!diasLaborables.includes(dia)) {
-    $('#msg').textContent = '⛔ El negocio no abre ese día';
+    $('#msg').textContent = '⛔ El negocio no abre ese día';
     $('#time').innerHTML  = '<option></option>';
     return;
   }
 
   $('#msg').textContent = '';
-  cargarHorasDisponibles(e.target.value);        // YYYY‑MM‑DD
+  cargarHorasDisponibles(e.target.value);       // 'YYYY‑MM‑DD'
 });
 
 
