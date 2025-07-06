@@ -66,6 +66,7 @@ let cfg = null;
   try {
     const res = await fetch(`${api}/api/public-config/${slug}`);
     cfg = await res.json();
+    console.log('🛠 CFG:', cfg); // ← Agrega esta línea
     if (!res.ok || !cfg.nombre) throw new Error(cfg.error || 'Negocio no encontrado');
 
     $('#negocio').textContent = `Reservar en ${cfg.nombre}`;
