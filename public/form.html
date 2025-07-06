@@ -87,18 +87,23 @@ const diasLaborables = (cfg.work_days || [])
 console.log("📦 work_days recibidos:", cfg.work_days);
 
 $('#date').addEventListener('change', e => {
-  const fecha = new Date(e.target.value);
-  const dia = fecha.getDay(); // 0 = Domingo … 6 = Sábado
+  if(!e.target.value) return;
+
+  // ⚠️  CONSTRUYE la fecha en horario local
+  const [y,m,d] = e.target.value.split('-').map(Number);
+  const fecha   = new Date(y, m - 1, d);        // (mes 0‑indexado)
+  const dia     = fecha.getDay();               // 0‑6
 
   if (!diasLaborables.includes(dia)) {
     $('#msg').textContent = '⛔ El negocio no abre ese día';
-    $('#time').innerHTML = '<option></option>';
+    $('#time').innerHTML  = '<option></option>';
     return;
   }
 
   $('#msg').textContent = '';
-  cargarHorasDisponibles(e.target.value);
+  cargarHorasDisponibles(e.target.value);        // YYYY‑MM‑DD
 });
+
 
   } catch (err) {
     console.error(err);
