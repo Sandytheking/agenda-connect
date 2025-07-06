@@ -32,11 +32,22 @@ const calendar = google.calendar({
 });
 
 
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
+// Validar que sea un string tipo YYYY-MM-DD
+if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  console.error("❌ Formato de fecha inválido:", date);
+  throw new Error("Formato de fecha inválido. Esperado: YYYY-MM-DD");
+}
 
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
+// Crear objeto Date seguro
+const [y, m, d] = date.split('-').map(Number);
+const start = new Date(y, m - 1, d, 0, 0, 0);
+const end   = new Date(y, m - 1, d, 23, 59, 59, 999);
+
+// Validación extra
+if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+  throw new Error("Fecha inválida al crear los rangos de día");
+}
+
 
   try {
     const res = await calendar.events.list({
