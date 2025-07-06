@@ -56,6 +56,7 @@ if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       timeMax: end.toISOString(),
       singleEvents: true,
       orderBy: 'startTime'
+      timeZone     : process.env.TZ || 'America/Santo_Domingo'   // 🆕
     });
 
     console.log("✅ Eventos recibidos:", res.data.items?.length || 0);

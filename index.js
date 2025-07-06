@@ -26,6 +26,7 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+console.log('🕒 TZ en Node =', Intl.DateTimeFormat().resolvedOptions().timeZone);
 
 // Configuración de Google OAuth
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
