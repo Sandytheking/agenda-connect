@@ -88,6 +88,8 @@ const diasLaborables = (cfg.work_days || [])
 console.log("📦 work_days recibidos:", cfg.work_days);
 
 $('#date').addEventListener('change', e => {
+  console.log('👉 Día elegido =', dia, '• Array permitidos =', diasLaborables);
+
   if(!e.target.value) return;
 
   // ⚠️  CONSTRUYE la fecha en horario local
