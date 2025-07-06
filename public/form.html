@@ -92,7 +92,7 @@ $('#date').addEventListener('change', e => {
 
   // ⚠️  CONSTRUYE la fecha en horario local
   const [y,m,d] = e.target.value.split('-').map(Number);
-  const fecha   = new Date(y, m - 1, d);        // (mes 0‑indexado)
+  const fecha   = new Date(y, m-1, d, 12, 0, 0);
   const dia     = fecha.getDay();               // 0‑6
 
   if (!diasLaborables.includes(dia)) {
