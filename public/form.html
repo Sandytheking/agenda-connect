@@ -162,6 +162,27 @@ $('#btn').onclick = async () => {
     body: JSON.stringify({ name, email, phone, date, time })
   });
 
+function generarSlots() {
+  const start = +cfg.start_hour;          // 8
+  let   end   = +cfg.end_hour;            // 6   (¡peligro!)
+  if (end <= start) end += 24;            // 6+24 = 30  → 18 en la lógica
+
+  const paso = Number(cfg.duration_minutes || 30);
+  const out  = [];
+
+  const cur  = new Date(); cur.setHours(start, 0, 0, 0);
+  const lim  = new Date(); lim.setHours(end,   0, 0, 0);
+
+  while (cur < lim) {
+    const HH = String(cur.getHours() % 24).padStart(2,'0');
+    const MM = String(cur.getMinutes()).padStart(2,'0');
+    out.push(`${HH}:${MM}`);
+    cur.setMinutes(cur.getMinutes() + paso);
+  }
+  return out;
+}
+
+
   const json = await res.json();
   $('#btn').disabled = false;
 
