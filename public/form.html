@@ -107,34 +107,36 @@ $('#date').addEventListener('change', e => {
   }
 })();
 
-function generarSlots () {
-  // 1. Paso en minutos
-  const paso = Number(cfg.duration_minutes || 30);
+<script>
 
-  // 2. Horas de inicio y fin (de "08:00" → 8)
-  let startH = Number((cfg.start_hour || '08:00').split(':')[0]);
-  let endH   = Number((cfg.end_hour   || '17:00').split(':')[0]);
+/* === generar la lista de horarios === */
+function generarSlots() {
+  const paso   = Number(cfg.duration_minutes || 30);   // minutos
+  const [sh, sm] = cfg.start_hour.split(':').map(Number); // ej 08,30
+  const [eh, em] = cfg.end_hour  .split(':').map(Number); // ej 18,00
 
-  // Si el final es menor o igual al inicio, asumimos horario PM y sumamos 12
-  if (endH <= startH) endH += 12;
+  const lista  = [];
+  const cur    = new Date();
+  cur.setHours(sh, sm, 0, 0);          // inicio real (hh, mm)
 
-  // 3. Fechas base para generar los slots
-  const cur = new Date();
-  cur.setHours(startH, 0, 0, 0);
-  const fin = new Date();
-  fin.setHours(endH, 0, 0, 0);
+  const fin    = new Date();
+  fin.setHours(eh, em, 0, 0);          // fin real (hh, mm)
 
-  // 4. Generar slots de tiempo
-  const out = [];
+  /* si fin ≤ inicio, salimos para evitar bucle infinito */
+  if (fin <= cur) return lista;
+
   while (cur < fin) {
     const HH = String(cur.getHours()).padStart(2, '0');
     const MM = String(cur.getMinutes()).padStart(2, '0');
-    out.push(`${HH}:${MM}`);
+    lista.push(`${HH}:${MM}`);
     cur.setMinutes(cur.getMinutes() + paso);
   }
-
-  return out;
+  return lista;
 }
+
+/* …resto del script… */
+</script>
+
 
 
 async function cargarHorasDisponibles(fechaISO){
