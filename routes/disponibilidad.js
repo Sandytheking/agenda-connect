@@ -90,8 +90,15 @@ router.get('/api/availability/:slug', async (req, res) => {
 
     return res.json({ available: true });
 
+    console.log('─── availability DEBUG ───');
+    console.log('slug    =', slug);
+    console.log('date    =', date, 'time =', time);
+    console.log('cfg max =', cfg.max_per_day, cfg.max_per_hour,
+            'dur =', cfg.duration_minutes);
+
+
   } catch (err) {
-    console.error('❌ disponibilidad GET:', err);
+    console.error('❌ disponibilidad GET error:', err.stack || err);
     res.status(500).json({ available: false, message: 'Error interno' });
   }
 });
