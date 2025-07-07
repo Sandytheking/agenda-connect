@@ -114,6 +114,16 @@ function generarSlots() {
   const fin = new Date();
   fin.setHours(+cfg.end_hour, 0, 0, 0);
 
+let { start_hour, end_hour } = cfg;
+start_hour = Number(start_hour.split(':')[0] || 0);
+end_hour   = Number(end_hour  .split(':')[0] || 0);
+
+if (end_hour <= start_hour) {
+  console.warn('⚠️ end_hour <= start_hour, usando +12 h por defecto');
+  end_hour += 12;          // o simplemente retorna []
+}
+
+
   const out = [];
   while (cur < fin) {
     const HH = cur.getHours().toString().padStart(2, '0');
