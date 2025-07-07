@@ -29,10 +29,10 @@ router.post('/:slug/disponibilidad', async (req, res) => {
     }
 
     // Construir fecha segura
-    const [h, m] = time.split(':').map(Number);
+    const [hh, mm] = time.split(':').map(Number);
     const [year, month, day] = date.split('-').map(Number);
-    const start = new Date(year, month - 1, day, h, m, 0);
-    const end = new Date(start.getTime() + (cfg.duration_minutes ?? 30) * 60000);
+    const slotStart = new Date(y, m - 1, d, hh, mm, 0, 0);
+    const slotEnd   = new Date(slotStart.getTime() + (cfg.duration_minutes || 30) * 60000);
 
     const solapados = events.filter(ev => {
       const s = new Date(ev.start), e = new Date(ev.end);
@@ -74,7 +74,7 @@ router.get('/api/availability/:slug', async (req, res) => {
     }
 
     // Construir fecha segura
-    const [h, m] = time.split(':').map(Number);
+    const [hh, mm] = time.split(':').map(Number);
     const [year, month, day] = date.split('-').map(Number);
     const start = new Date(year, month - 1, day, h, m, 0);
     const end = new Date(start.getTime() + (cfg.duration_minutes ?? 30) * 60000);

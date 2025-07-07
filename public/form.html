@@ -185,6 +185,12 @@ $('#btn').onclick = async () => {
   } else {
     $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
   }
+  body: JSON.stringify({
+  name, email, phone,
+  startISO : `${date}T${time}:00`,
+  duration : cfg.duration_minutes || 30
+})
+
 };
 </script>
 </body>
