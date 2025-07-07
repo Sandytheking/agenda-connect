@@ -107,32 +107,47 @@ $('#date').addEventListener('change', e => {
   }
 })();
 
-function generarSlots() {
-  const paso = Number(cfg.duration_minutes || 30);
-  const cur = new Date();
-  cur.setHours(+cfg.start_hour, 0, 0, 0);
-  const fin = new Date();
-  fin.setHours(+cfg.end_hour, 0, 0, 0);
+function generarSlots () {
+-  const paso  = Number(cfg.duration_minutes || 30);
+-  const cur   = new Date();
+-  cur.setHours(+cfg.start_hour, 0, 0, 0);
+-  const fin   = new Date();
+-  fin.setHours(+cfg.end_hour , 0, 0, 0);
+-
+-  let { start_hour, end_hour } = cfg;
+-  start_hour = Number(start_hour.split(':')[0] || 0);
+-  end_hour   = Number(end_hour  .split(':')[0] || 0);
+-
+-  if (end_hour <= start_hour) {
+-    console.warn('⚠️ end_hour <= start_hour, usando +12 h por defecto');
+-    end_hour += 12;
+-  }
 
-let { start_hour, end_hour } = cfg;
-start_hour = Number(start_hour.split(':')[0] || 0);
-end_hour   = Number(end_hour  .split(':')[0] || 0);
++  const paso = Number(cfg.duration_minutes || 30);
++
++  // Hora de inicio y fin en número
++  let startH = Number(cfg.start_hour.split(':')[0] || 0);
++  let endH   = Number(cfg.end_hour  .split(':')[0] || 0);
++
++  // Si fin es menor o igual, asumimos horario vespertino y sumamos 12
++  if (endH <= startH) endH += 12;
++
++  const cur = new Date();
++  cur.setHours(startH, 0, 0, 0);
++
++  const fin = new Date();
++  fin.setHours(endH, 0, 0, 0);
 
-if (end_hour <= start_hour) {
-  console.warn('⚠️ end_hour <= start_hour, usando +12 h por defecto');
-  end_hour += 12;          // o simplemente retorna []
+   const out = [];
+   while (cur < fin) {
+     const HH = cur.getHours().toString().padStart(2, '0');
+     const MM = cur.getMinutes().toString().padStart(2, '0');
+     out.push(`${HH}:${MM}`);
+     cur.setMinutes(cur.getMinutes() + paso);
+   }
+   return out;
 }
 
-
-  const out = [];
-  while (cur < fin) {
-    const HH = cur.getHours().toString().padStart(2, '0');
-    const MM = cur.getMinutes().toString().padStart(2, '0');
-    out.push(`${HH}:${MM}`);
-    cur.setMinutes(cur.getMinutes() + paso);
-  }
-  return out;
-}
 
 async function cargarHorasDisponibles(fechaISO){
   $('#time').innerHTML = '<option>Cargando…</option>';
