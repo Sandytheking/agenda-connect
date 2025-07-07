@@ -75,8 +75,12 @@ router.get('/api/availability/:slug', async (req, res) => {
 
     const [year, month, day] = date.split('-').map(Number);
     const [hh, mm] = time.split(':').map(Number);
-    const slotStart = new Date(year, month - 1, day, hh, mm);
-    const slotEnd = new Date(slotStart.getTime() + (cfg.duration_minutes ?? 30) * 60000);
+    
+    @@ router.get('/api/availability/:slug', async (req, res) => {
++    const start = new Date(year, month - 1, day, hh, mm, 0, 0);
++    const end   = new Date(start.getTime() +
++                  (cfg.duration_minutes ?? 30) * 60000);
+
 
     const solapados = events.filter(ev => {
       const s = new Date(ev.start);
