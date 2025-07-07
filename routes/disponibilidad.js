@@ -3,6 +3,7 @@ import express from 'express';
 import { getConfigBySlug }   from '../supabaseClient.js';
 import { getAccessToken,
          getEventsForDay }   from '../utils/google.js';
+import { toLocalDateTime } from '../utils/helpers.js';
 
 const router = express.Router();
 
@@ -36,9 +37,8 @@ router.get('/api/availability/:slug', async (req, res) => {
     /* ④  Construir el rango horario del slot solicitado */
     const [hh, mm]        = time.split(':').map(Number);
     const [y, m, d]       = date.split('-').map(Number);     // 2025‑07‑17
-    const slotStart       = new Date(y, m - 1, d, hh, mm, 0);
-    const slotEnd         = new Date(slotStart.getTime() +
-                           (cfg.duration_minutes ?? 30) * 60000);
+    const { jsDate: slotStart } = toLocalDateTime(date, time);
+    const slotEnd = new Date(slotStart.getTime() + (cfg.duration_minutes ?? 30) * 6e4);
 
     /* ⑤  ¿Colisiona con algún evento existente? */
     const solapados = eventos.filter(ev => {
