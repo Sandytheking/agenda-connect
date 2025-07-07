@@ -24,9 +24,9 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
     const accessToken = await getAccessToken(config.refresh_token);
 
     // 🔁 Construir fecha localmente sin desfase de UTC
-    const [y, m, d] = date.split('-').map(Number);       // "2025-07-12"
-    const [hh, mm]  = time.split(':').map(Number);       // "09:30"
-    const start = new Date(y, m - 1, d, hh, mm, 0);       // Local time
+    const [year, month, day] = date.split('-').map(Number);       // "2025-07-12"
+    const [h, m] = time.split(":").map(Number);       // "09:30"
+    const start = new Date(year, month - 1, day, h, m, 0, 0);       // Local time
     const end   = new Date(start.getTime() + (config.duration_minutes || 30) * 60000);
 
     const eventos = await getEventsForDay(accessToken, date);
