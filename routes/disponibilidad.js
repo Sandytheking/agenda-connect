@@ -35,24 +35,25 @@ router.get('/api/availability/:slug', async (req, res) => {
     }
 
     /* ④  Construir el rango horario del slot solicitado */
-    const [hh, mm]        = time.split(':').map(Number);
-    const [y, m, d]       = date.split('-').map(Number);     // 2025‑07‑17
-    const { jsDate: slotStart } = toLocalDateTime(date, time);
-    const slotEnd = new Date(slotStart.getTime() + (cfg.duration_minutes ?? 30) * 6e4);
+    const [year, month, day]   = date.split('-').map(Number);   // YYYY‑MM‑DD
+    const [hh,   mm   ]        = time.split(':').map(Number);   // HH:mm
 
-    /* ⑤  ¿Colisiona con algún evento existente? */
-    const solapados = eventos.filter(ev => {
-      const s = new Date(ev.start);
-      const e = new Date(ev.end);
-      return s < slotEnd && slotStart < e;
-    });
+    const slotStart = new Date(year, month - 1, day, hh, mm, 0, 0);
+    const slotEnd   = new Date(slotStart.getTime() +
+                 (cfg.duration_minutes ?? 30) * 60_000);
 
-    if (solapados.length >= (cfg.max_per_hour ?? 1)) {
-      return res.json({ available:false, message:'Hora ocupada' });
-    }
+// 2️⃣  ¿Colisiona?
+const solapados = events.filter(ev => {
+  const s = new Date(ev.start);
+  const e = new Date(ev.end);
+  return s < slotEnd && slotStart < e;
+});
 
-    /* ⑥  Buenas noticias… */
-    res.json({ available:true });
+if (solapados.length >= (cfg.max_per_hour ?? 1)) {
+  return res.json({ available:false, message:'Hora ocupada' });
+}
+
+return res.json({ available:true });
 
   } catch (err) {
     console.error('❌ disponibilidad GET:', err);
