@@ -28,9 +28,8 @@ router.post('/:slug/disponibilidad', async (req, res) => {
     // Construir el slot de forma segura
     const [hh, mm]                = time.split(':').map(Number);
     const [year, month, day]      = date.split('-').map(Number);
-    const slotStart               = new Date(year, month - 1, day, hh, mm, 0, 0);
-    const slotEnd                 = new Date(slotStart.getTime() +
-                                   (cfg.duration_minutes ?? 30) * 60000);
+   const start             = new Date(y, m - 1, d, hh, mm, 0, 0);
+   const end               = new Date(start.getTime() + (cfg.duration_minutes ?? 30) * 60000);
 
     const solapados = events.filter(ev => {
       const s = new Date(ev.start), e = new Date(ev.end);
