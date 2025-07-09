@@ -26,10 +26,12 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const token   = await getAccessToken(cfg.refresh_token);
     const eventos = await getEventsForDay(token, date);
 
-    const [hh, mm]      = time.split(':').map(Number);
-    const [y, m, d]     = date.split('-').map(Number);
-    const startObj      = new Date(y, m - 1, d, hh, mm, 0);
-    const endObj        = new Date(startObj.getTime() + (cfg.duration_minutes ?? 30) * 60000);
+const startISO = `${date}T${time}:00`;
+const [hh, mm] = time.split(':').map(Number);
+const end = new Date(`${date}T${time}:00`);
+end.setMinutes(end.getMinutes() + (cfg.duration_minutes || 30));
+const endISO = end.toISOString().slice(0, 19); // "YYYY-MM-DDTHH:MM:SS"
+
 
     const choca = eventos.some(ev => {
       const s = new Date(ev.start), e = new Date(ev.end);
