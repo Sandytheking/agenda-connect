@@ -38,6 +38,7 @@ router.post('/:slug/crear-cita', async (req, res) => {
     });
     if (haySolape) return res.status(409).json({ error:'Hora ocupada' });
 
+
     /* ③ Insertar en Google Calendar */
     const auth = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
@@ -47,9 +48,17 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const calendar = google.calendar({ version:'v3', auth });
 
     // ⚠️  Construir cadenas SIN sufijo Z
-    const pad = n => String(n).padStart(2,'0');
-    const startISO = `${date}T${pad(hh)}:${pad(mm)}:00`;
-    const endISO   = `${date}T${pad(endLocal.getHours())}:${pad(endLocal.getMinutes())}:00`;
+    const pad = n => n.toString().padStart(2, '0');
+
+const startISO = `${date}T${pad(hh)}:${pad(mm)}:00`;
+const endISO   = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
+
+
+console.log('🕒 Evento →', {
+  start: startISO,
+  end  : endISO,
+  tz   : cfg.timezone || 'America/Santo_Domingo'
+});
 
     await calendar.events.insert({
       calendarId : 'primary',
