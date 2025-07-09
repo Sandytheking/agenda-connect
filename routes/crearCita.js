@@ -45,9 +45,15 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oauth.setCredentials({ access_token: token });
     const calendar = google.calendar({ version:'v3', auth:oauth });
 
-    const pad = n => n.toString().padStart(2, '0');
-    const startISO = `${date}T${time}:00`;
-    const endISO   = `${date}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
+    // Forzar construcción ISO con timezone explícito y sin 'Z'
+const toIsoLocal = (d) => {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+};
+
+const startISO = toIsoLocal(startObj); // sin 'Z'
+const endISO   = toIsoLocal(endObj);   // sin 'Z'
+
 
     const evento = await calendar.events.insert({
       calendarId : 'primary',
