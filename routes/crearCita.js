@@ -58,11 +58,11 @@ router.post('/api/citas/:slug', async (req, res) => {
         description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
         start: {
           dateTime: startISO,
-          timeZone: cfg.timezone || 'America/Santo_Domingo'
+          timeZone: cfg.timezone || "America/Santo_Domingo"
         },
         end: {
           dateTime: endISO,
-          timeZone: cfg.timezone || 'America/Santo_Domingo'
+          timeZone: cfg.timezone || "America/Santo_Domingo"
         },
         attendees: [{ email }],
         reminders: { useDefault: true }
