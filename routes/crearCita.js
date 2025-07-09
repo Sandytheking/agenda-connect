@@ -52,15 +52,6 @@ const endISO   = `${date}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:
 
     const timeZone = (cfg.timezone || 'America/Santo_Domingo').replace(/'/g, '');
 
-start: {
-  dateTime: startISO,
-  timeZone: cfg.timezone || 'America/Santo_Domingo'
-},
-end: {
-  dateTime: endISO,
-  timeZone: cfg.timezone || 'America/Santo_Domingo'
-}
-
 
     const evento = await calendar.events.insert({
       calendarId : 'primary',
