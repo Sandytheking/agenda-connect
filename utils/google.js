@@ -39,12 +39,14 @@ export async function getEventsForDay(accessToken, date) {
 
   try {
     const res = await calendar.events.list({
-      calendarId   : 'primary',
-      timeMin      : toIsoLocal(start),
-      timeMax      : toIsoLocal(end),
-      singleEvents : true,
-      orderBy      : 'startTime'
+  calendarId   : 'primary',
+  timeMin      : start.toISOString(), // ✅ con Z al final
+  timeMax      : end.toISOString(),   // ✅ con Z al final
+  singleEvents : true,
+  orderBy      : 'startTime'
+  // ⛔ No incluyas timeZone aquí en events.list, Google lo ignora y puede causar error
     });
+
 
     console.log("✅ Eventos recibidos:", res.data.items?.length || 0);
     return res.data.items.map(ev => ({
