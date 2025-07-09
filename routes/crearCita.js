@@ -8,67 +8,72 @@ const router = express.Router();
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const { slug } = req.params;
-  const { name, email, phone, date, time } = req.body; // date: "YYYY-MM-DD", time: "HH:mm"
+  const { name, email, phone, date, time } = req.body; // YYYY-MM-DD + HH:mm
 
   if (!name || !email || !date || !time) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
   try {
+    // ① Configuración
     const cfg = await getConfigBySlug(slug);
     if (!cfg || !cfg.refresh_token) {
       return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
-    const accessToken = await getAccessToken(cfg.refresh_token);
-    const eventos = await getEventsForDay(accessToken, date);
+    // ② Validar disponibilidad
+    const token = await getAccessToken(cfg.refresh_token);
+    const eventos = await getEventsForDay(token, date);
 
-    const [hh, mm] = time.split(':').map(Number);
-    const startDate = new Date(`${date}T${time}:00`);
-    const endDate = new Date(startDate.getTime() + (cfg.duration_minutes || 30) * 60000);
+    const [yy, mm, dd] = date.split('-').map(Number);
+    const [hh, min]    = time.split(':').map(Number);
 
-    // Validar solapamientos
-    const solapados = eventos.filter(ev => {
-      const s = new Date(ev.start), e = new Date(ev.end);
-      return s < endDate && startDate < e;
+    const start = new Date(yy, mm - 1, dd); // ← base sin UTC
+    start.setHours(hh, min, 0, 0);
+
+    const end = new Date(start.getTime() + (cfg.duration_minutes || 30) * 60000);
+
+    const choca = eventos.some(ev => {
+      const evStart = new Date(ev.start);
+      const evEnd   = new Date(ev.end);
+      return evStart < end && start < evEnd;
     });
 
-    if (solapados.length > 0) {
+    if (choca) {
       return res.status(409).json({ error: 'Hora ocupada' });
     }
 
-    const oAuth2Client = new google.auth.OAuth2(
+    // ③ Insertar en Google Calendar
+    const oauth = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
     );
-    oAuth2Client.setCredentials({ access_token: accessToken });
+    oauth.setCredentials({ access_token: token });
+    const calendar = google.calendar({ version: 'v3', auth: oauth });
 
-    const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+    const startISO = start.toISOString().slice(0, 19); // sin Z
+    const endISO   = end.toISOString().slice(0, 19);
 
-    // Construir strings ISO SIN 'Z'
-    const startISO = `${date}T${time}:00`;
-    const endISO = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}T${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}:00`;
-
-    const evento = await calendar.events.insert({
+    const event = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: {
-        summary: `Cita con ${name}`,
+        summary    : `Cita con ${name}`,
         description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
         start: {
           dateTime: startISO,
-          timeZone: 'America/Santo_Domingo'
+          timeZone: cfg.timezone || 'America/Santo_Domingo'
         },
         end: {
           dateTime: endISO,
-          timeZone: 'America/Santo_Domingo'
+          timeZone: cfg.timezone || 'America/Santo_Domingo'
         },
         attendees: [{ email }],
         reminders: { useDefault: true }
       }
     });
 
-    res.json({ success: true, eventId: evento.data.id });
-
+    // ④ Fin OK
+    res.json({ success: true, eventId: event.data.id });
   } catch (err) {
     console.error('❌ Error al crear cita:', err);
     res.status(500).json({ error: 'No se pudo crear la cita' });
