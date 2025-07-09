@@ -1,3 +1,19 @@
+import { google } from 'googleapis';
+import dotenv from 'dotenv';
+dotenv.config();
+
+export async function getAccessToken(refresh_token) {
+  const oAuth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+
+  oAuth2Client.setCredentials({ refresh_token });
+
+  const { token } = await oAuth2Client.getAccessToken();
+  return token;
+}
+
 export async function getEventsForDay(accessToken, date) {
   console.log("🔐 Usando access_token:", accessToken?.slice(0, 20), "...");
 
@@ -10,7 +26,6 @@ export async function getEventsForDay(accessToken, date) {
 
   const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-  // Validar que sea un string tipo YYYY-MM-DD
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     console.error("❌ Formato de fecha inválido:", date);
     throw new Error("Formato de fecha inválido. Esperado: YYYY-MM-DD");
@@ -29,7 +44,6 @@ export async function getEventsForDay(accessToken, date) {
       timeMax      : toIsoLocal(end),
       singleEvents : true,
       orderBy      : 'startTime'
-      // ⛔️ timeZone aquí no tiene efecto real
     });
 
     console.log("✅ Eventos recibidos:", res.data.items?.length || 0);
