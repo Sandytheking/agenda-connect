@@ -45,21 +45,23 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oauth.setCredentials({ access_token: token });
     const calendar = google.calendar({ version:'v3', auth:oauth });
 
-   const pad = n => n.toString().padStart(2, '0');
-const startISO = `${date}T${time}:00`;
-const endISO   = `${date}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
-
-
-    const timeZone = (cfg.timezone || 'America/Santo_Domingo').replace(/'/g, '');
-
+    const pad = n => n.toString().padStart(2, '0');
+    const startISO = `${date}T${time}:00`;
+    const endISO   = `${date}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
 
     const evento = await calendar.events.insert({
       calendarId : 'primary',
       requestBody: {
         summary     : `Cita con ${name}`,
         description : `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
-        start       : { dateTime:startISO, timeZone },
-        end         : { dateTime:endISO,   timeZone },
+        start       : {
+          dateTime: startISO,
+          timeZone: (cfg.timezone || 'America/Santo_Domingo').replace(/'/g, '')
+        },
+        end         : {
+          dateTime: endISO,
+          timeZone: (cfg.timezone || 'America/Santo_Domingo').replace(/'/g, '')
+        },
         attendees   : [{ email }],
         reminders   : { useDefault:true }
       }
