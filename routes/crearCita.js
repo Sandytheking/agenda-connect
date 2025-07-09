@@ -45,12 +45,22 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oauth.setCredentials({ access_token: token });
     const calendar = google.calendar({ version:'v3', auth:oauth });
 
-    const startISO = `${date}T${time}:00`;
-    const endISO   = `${date}T${(
-                        '0'+endObj.getHours()).slice(-2)}:${
-                        ('0'+endObj.getMinutes()).slice(-2)}:00`;
+   const pad = n => n.toString().padStart(2, '0');
+const startISO = `${date}T${time}:00`;
+const endISO   = `${date}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
+
 
     const timeZone = (cfg.timezone || 'America/Santo_Domingo').replace(/'/g, '');
+
+start: {
+  dateTime: startISO,
+  timeZone: cfg.timezone || 'America/Santo_Domingo'
+},
+end: {
+  dateTime: endISO,
+  timeZone: cfg.timezone || 'America/Santo_Domingo'
+}
+
 
     const evento = await calendar.events.insert({
       calendarId : 'primary',
