@@ -55,10 +55,14 @@ const endISO   = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endO
 
 
 console.log('🕒 Evento →', {
-  start: startISO,
-  end  : endISO,
-  tz   : cfg.timezone || 'America/Santo_Domingo'
-});
+start: {
+  dateTime: startISO,
+  timeZone: cfg.timezone || 'America/Santo_Domingo'
+},
+end: {
+  dateTime: endISO,
+  timeZone: cfg.timezone || 'America/Santo_Domingo'
+},
 
     await calendar.events.insert({
       calendarId : 'primary',
