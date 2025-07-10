@@ -3,7 +3,7 @@ import express from 'express';
 import { google } from 'googleapis';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
-import { zonedTimeToUtc } from 'date-fns-tz';
+import zonedTimeToUtc from 'date-fns-tz/zonedTimeToUtc.js';
 
 const router = express.Router();
 
