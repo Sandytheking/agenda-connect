@@ -44,14 +44,16 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const [hh, mm] = time.split(":" ).map(Number);
     const [y, m, d] = date.split('-').map(Number);
 
-    // ⚠️ PARCHE TEMPORAL: sumar 1 día para evitar desfase en Render
-    const utcStart = new Date(Date.UTC(y, m - 1, d + 1, hh, mm));
+    // ✅ Crear hora local directamente sin UTC ni sumar días
+    const localStart = new Date(y, m - 1, d, hh, mm);
+
+    // ✅ Duración dinámica
     const dur = Number(duration || cfg.duration_minutes || 30);
-    const utcEnd = new Date(utcStart.getTime() + dur * 60000);
+    const localEnd = new Date(localStart.getTime() + dur * 60000);
 
     const solapados = eventos.filter(ev => {
       const s = new Date(ev.start), e = new Date(ev.end);
-      return s < utcEnd && utcStart < e;
+      return s < localEnd && localStart < e;
     });
 
     if (solapados.length > 0) {
@@ -65,8 +67,8 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    const startISO = toLocalISO(utcStart, timezone);
-    const endISO = toLocalISO(utcEnd, timezone);
+    const startISO = toLocalISO(localStart, timezone);
+    const endISO = toLocalISO(localEnd, timezone);
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
