@@ -6,22 +6,8 @@ import { getAccessToken, getEventsForDay } from '../utils/google.js';
 
 const router = express.Router();
 
-// ✅ Auxiliar para construir fecha local ISO en zona horaria
-function toLocalISO(dateObj, tz) {
-  const fmt = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: tz,
-    hour12: false,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-
-  const parts = fmt.formatToParts(dateObj).reduce((acc, part) => {
-    if (part.type !== 'literal') acc[part.type] = part.value;
-    return acc;
-  }, {});
-
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
-}
+// ✅ Auxiliar para rellenar ceros
+const pad = n => String(n).padStart(2, '0');
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const { slug } = req.params;
@@ -43,17 +29,19 @@ router.post('/:slug/crear-cita', async (req, res) => {
 
     const [hh, mm] = time.split(":" ).map(Number);
     const [y, m, d] = date.split('-').map(Number);
-
-    // ✅ Crear hora local directamente sin UTC ni sumar días
-    const localStart = new Date(y, m - 1, d, hh, mm);
-
-    // ✅ Duración dinámica
     const dur = Number(duration || cfg.duration_minutes || 30);
-    const localEnd = new Date(localStart.getTime() + dur * 60000);
+
+    // ✅ Fechas en hora local, como texto ISO sin 'Z'
+    const startISO = `${y}-${pad(m)}-${pad(d)}T${pad(hh)}:${pad(mm)}:00`;
+    const endDate = new Date(y, m - 1, d, hh, mm + dur);
+    const endISO  = `${y}-${pad(m)}-${pad(d)}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`;
+
+    const startObj = new Date(y, m - 1, d, hh, mm);
+    const endObj   = new Date(startObj.getTime() + dur * 60000);
 
     const solapados = eventos.filter(ev => {
       const s = new Date(ev.start), e = new Date(ev.end);
-      return s < localEnd && localStart < e;
+      return s < endObj && startObj < e;
     });
 
     if (solapados.length > 0) {
@@ -66,9 +54,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
     );
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
-
-    const startISO = toLocalISO(localStart, timezone);
-    const endISO = toLocalISO(localEnd, timezone);
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
