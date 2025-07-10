@@ -6,6 +6,23 @@ import { getAccessToken, getEventsForDay } from '../utils/google.js';
 
 const router = express.Router();
 
+// ✅ Auxiliar para construir fechas locales en zona horaria deseada
+function toLocalISO(dateObj, tz) {
+  const fmt = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: tz,
+    hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+
+  const parts = fmt.formatToParts(dateObj).reduce((acc, part) => {
+    if (part.type !== 'literal') acc[part.type] = part.value;
+    return acc;
+  }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
 router.post('/:slug/crear-cita', async (req, res) => {
   const { slug } = req.params;
   const { name, email, phone, date, time } = req.body;
@@ -31,7 +48,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
     console.log("🕓 Fecha recibida:", date);
     console.log("🕓 Hora recibida:", time);
     console.log("🧠 Date construida:", start);
-    console.log("📦 start.toISOString():", start.toISOString());
     console.log("📦 Zona horaria usada:", cfg.timezone || 'America/Santo_Domingo');
 
     const solapados = eventos.filter(ev => {
@@ -50,30 +66,9 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    // Construir fecha local real sin desfase
-function toLocalISO(dateObj, tz) {
-  const fmt = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: tz,
-    hour12: false,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-
-  const parts = fmt.formatToParts(dateObj).reduce((acc, part) => {
-    if (part.type !== 'literal') acc[part.type] = part.value;
-    return acc;
-  }, {});
-
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
-}
-
-const timezone = cfg.timezone || 'America/Santo_Domingo';
-const startISO = toLocalISO(start, timezone);
-const endISO   = toLocalISO(end, timezone);
-
-    const endH = String(end.getHours()).padStart(2, '0');
-    const endM = String(end.getMinutes()).padStart(2, '0');
-    const endISO = `${date}T${endH}:${endM}:00`;
+    const timezone = cfg.timezone || 'America/Santo_Domingo';
+    const startISO = toLocalISO(start, timezone);
+    const endISO = toLocalISO(end, timezone);
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
@@ -82,11 +77,11 @@ const endISO   = toLocalISO(end, timezone);
         description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
         start: {
           dateTime: startISO,
-          timeZone: cfg.timezone || 'America/Santo_Domingo'
+          timeZone: timezone
         },
         end: {
           dateTime: endISO,
-          timeZone: cfg.timezone || 'America/Santo_Domingo'
+          timeZone: timezone
         },
         attendees: [{ email }],
         reminders: {
