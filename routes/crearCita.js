@@ -25,7 +25,7 @@ function toLocalISO(dateObj, tz) {
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const { slug } = req.params;
-  const { name, email, phone, date, time } = req.body;
+  const { name, email, phone, date, time, duration } = req.body;
 
   if (!name || !email || !date || !time) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
@@ -44,9 +44,10 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const [hh, mm] = time.split(":" ).map(Number);
     const [y, m, d] = date.split('-').map(Number);
 
-    // Crear fechas en UTC y luego formatear según zona horaria
-    const utcStart = new Date(Date.UTC(y, m - 1, d, hh, mm));
-    const utcEnd = new Date(utcStart.getTime() + (cfg.duration_minutes || 30) * 60000);
+    // ⚠️ PARCHE TEMPORAL: sumar 1 día para evitar desfase en Render
+    const utcStart = new Date(Date.UTC(y, m - 1, d + 1, hh, mm));
+    const dur = Number(duration || cfg.duration_minutes || 30);
+    const utcEnd = new Date(utcStart.getTime() + dur * 60000);
 
     const solapados = eventos.filter(ev => {
       const s = new Date(ev.start), e = new Date(ev.end);
