@@ -50,8 +50,27 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    // Construir cadenas de fecha locales sin usar toISOString
-    const startISO = `${date}T${time}:00`;
+    // Construir fecha local real sin desfase
+function toLocalISO(dateObj, tz) {
+  const fmt = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: tz,
+    hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+
+  const parts = fmt.formatToParts(dateObj).reduce((acc, part) => {
+    if (part.type !== 'literal') acc[part.type] = part.value;
+    return acc;
+  }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+const timezone = cfg.timezone || 'America/Santo_Domingo';
+const startISO = toLocalISO(start, timezone);
+const endISO   = toLocalISO(end, timezone);
+
     const endH = String(end.getHours()).padStart(2, '0');
     const endM = String(end.getMinutes()).padStart(2, '0');
     const endISO = `${date}T${endH}:${endM}:00`;
