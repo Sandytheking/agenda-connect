@@ -50,15 +50,11 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-   const startISO = `${date}T${time}:00`;
-
-const endISO = (() => {
-  const endH = String(end.getHours()).padStart(2, '0');
-  const endM = String(end.getMinutes()).padStart(2, '0');
-  return `${date}T${endH}:${endM}:00`;
-
-   })();
-
+    // Construir cadenas de fecha locales sin usar toISOString
+    const startISO = `${date}T${time}:00`;
+    const endH = String(end.getHours()).padStart(2, '0');
+    const endM = String(end.getMinutes()).padStart(2, '0');
+    const endISO = `${date}T${endH}:${endM}:00`;
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
