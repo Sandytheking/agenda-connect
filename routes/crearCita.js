@@ -25,52 +25,35 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const token = await getAccessToken(cfg.refresh_token);
     const eventos = await getEventsForDay(token, date);
 
-    const [yy, mm, dd] = date.split('-').map(Number);
-    const [hh, min]    = time.split(':').map(Number);
+const [hh, mm] = time.split(':').map(Number);
+const [y, m, d] = date.split('-').map(Number);
 
-    const start = new Date(yy, mm - 1, dd); // ← base sin UTC
-    start.setHours(hh, min, 0, 0);
+const startObj = new Date(y, m - 1, d, hh, mm, 0); // ✅ en hora local
+const endObj   = new Date(startObj.getTime() + (cfg.duration_minutes || 30) * 60000);
 
-    const end = new Date(start.getTime() + (cfg.duration_minutes || 30) * 60000);
+// ✅ Construcción manual (sin .toISOString())
+const pad = n => String(n).padStart(2, '0');
+const startISO = `${y}-${pad(m)}-${pad(d)}T${pad(hh)}:${pad(mm)}:00`;
+const endISO   = `${endObj.getFullYear()}-${pad(endObj.getMonth() + 1)}-${pad(endObj.getDate())}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
 
-    const choca = eventos.some(ev => {
-      const evStart = new Date(ev.start);
-      const evEnd   = new Date(ev.end);
-      return evStart < end && start < evEnd;
-    });
+const evento = await calendar.events.insert({
+  calendarId: 'primary',
+  requestBody: {
+    summary     : `Cita con ${name}`,
+    description : `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
+    start       : {
+      dateTime : startISO,
+      timeZone: 'America/Santo_Domingo' // ✅ explícito
+    },
+    end         : {
+      dateTime : endISO,
+      timeZone: 'America/Santo_Domingo'
+    },
+    attendees   : [{ email }],
+    reminders   : { useDefault: true }
+  }
+});
 
-    if (choca) {
-      return res.status(409).json({ error: 'Hora ocupada' });
-    }
-
-    // ③ Insertar en Google Calendar
-    const oauth = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET
-    );
-    oauth.setCredentials({ access_token: token });
-    const calendar = google.calendar({ version: 'v3', auth: oauth });
-
-    const startISO = start.toISOString().slice(0, 19); // sin Z
-    const endISO   = end.toISOString().slice(0, 19);
-
-    const event = await calendar.events.insert({
-      calendarId: 'primary',
-      requestBody: {
-        summary    : `Cita con ${name}`,
-        description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
-        start: {
-          dateTime: startISO,
-          timeZone: cfg.timezone || 'America/Santo_Domingo'
-        },
-        end: {
-          dateTime: endISO,
-          timeZone: cfg.timezone || 'America/Santo_Domingo'
-        },
-        attendees: [{ email }],
-        reminders: { useDefault: true }
-      }
-    });
 
     // ④ Fin OK
     res.json({ success: true, eventId: event.data.id });
