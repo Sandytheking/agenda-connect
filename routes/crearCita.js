@@ -3,24 +3,15 @@ import express from 'express';
 import { google } from 'googleapis';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
-import zonedTimeToUtc from 'date-fns-tz/zonedTimeToUtc.js';
 
 const router = express.Router();
 
-function toLocalISO(dateObj, tz) {
-  const fmt = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: tz,
-    hour12: false,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
+function pad(n) {
+  return n.toString().padStart(2, '0');
+}
 
-  const parts = fmt.formatToParts(dateObj).reduce((acc, part) => {
-    if (part.type !== 'literal') acc[part.type] = part.value;
-    return acc;
-  }, {});
-
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+function toIsoWithoutZ(dateObj) {
+  return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
 }
 
 router.post('/:slug/crear-cita', async (req, res) => {
@@ -44,17 +35,13 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const [hh, mm] = time.split(":" ).map(Number);
     const [y, m, d] = date.split('-').map(Number);
 
-    // 🔧 Convertir hora local a UTC desde zona horaria correcta
     const localStart = new Date(y, m - 1, d, hh, mm);
-    const utcStart = zonedTimeToUtc(localStart, timezone);
-
-    // ✅ Duración tomada dinámicamente desde el cliente o config
     const dur = Number(duration || cfg.duration_minutes || 30);
-    const utcEnd = new Date(utcStart.getTime() + dur * 60000);
+    const localEnd = new Date(localStart.getTime() + dur * 60000);
 
     const solapados = eventos.filter(ev => {
       const s = new Date(ev.start), e = new Date(ev.end);
-      return s < utcEnd && utcStart < e;
+      return s < localEnd && localStart < e;
     });
 
     if (solapados.length > 0) {
@@ -68,8 +55,8 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    const startISO = toLocalISO(utcStart, timezone);
-    const endISO = toLocalISO(utcEnd, timezone);
+    const startISO = toIsoWithoutZ(localStart);
+    const endISO = toIsoWithoutZ(localEnd);
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
