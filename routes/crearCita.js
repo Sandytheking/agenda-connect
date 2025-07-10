@@ -67,8 +67,9 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
     const timezone = cfg.timezone || 'America/Santo_Domingo';
-    const startISO = toLocalISO(start, timezone);
-    const endISO = toLocalISO(end, timezone);
+    const startISO = start.toISOString();  // incluye la Z
+    const endISO   = end.toISOString();    // incluye la Z
+
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
