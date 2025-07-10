@@ -6,7 +6,7 @@ import { getAccessToken, getEventsForDay } from '../utils/google.js';
 
 const router = express.Router();
 
-// ✅ Auxiliar para construir fechas locales en zona horaria deseada
+// ✅ Auxiliar para construir fecha local ISO en zona horaria
 function toLocalISO(dateObj, tz) {
   const fmt = new Intl.DateTimeFormat('sv-SE', {
     timeZone: tz,
@@ -37,22 +37,20 @@ router.post('/:slug/crear-cita', async (req, res) => {
       return res.status(404).json({ error: 'Negocio no encontrado o sin token' });
     }
 
+    const timezone = cfg.timezone || 'America/Santo_Domingo';
     const token = await getAccessToken(cfg.refresh_token);
     const eventos = await getEventsForDay(token, date);
 
-    const [hh, mm] = time.split(":").map(Number);
+    const [hh, mm] = time.split(":" ).map(Number);
     const [y, m, d] = date.split('-').map(Number);
-    const start = new Date(y, m - 1, d, hh, mm, 0);
-    const end = new Date(start.getTime() + (cfg.duration_minutes || 30) * 60000);
 
-    console.log("🕓 Fecha recibida:", date);
-    console.log("🕓 Hora recibida:", time);
-    console.log("🧠 Date construida:", start);
-    console.log("📦 Zona horaria usada:", cfg.timezone || 'America/Santo_Domingo');
+    // Crear fechas en UTC y luego formatear según zona horaria
+    const utcStart = new Date(Date.UTC(y, m - 1, d, hh, mm));
+    const utcEnd = new Date(utcStart.getTime() + (cfg.duration_minutes || 30) * 60000);
 
     const solapados = eventos.filter(ev => {
       const s = new Date(ev.start), e = new Date(ev.end);
-      return s < end && start < e;
+      return s < utcEnd && utcStart < e;
     });
 
     if (solapados.length > 0) {
@@ -66,10 +64,8 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    const timezone = cfg.timezone || 'America/Santo_Domingo';
-    const startISO = start.toISOString();  // incluye la Z
-    const endISO   = end.toISOString();    // incluye la Z
-
+    const startISO = toLocalISO(utcStart, timezone);
+    const endISO = toLocalISO(utcEnd, timezone);
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
