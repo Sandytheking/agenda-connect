@@ -11,9 +11,9 @@ function pad(n) {
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const { slug } = req.params;
-  const { name, email, phone, date, time, duration } = req.body;
+  const { name, email, phone, dateTime, duration } = req.body;
 
-  if (!name || !email || !date || !time) {
+  if (!name || !email || !dateTime) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
@@ -25,11 +25,17 @@ router.post('/:slug/crear-cita', async (req, res) => {
 
     const timezone = cfg.timezone || 'America/Santo_Domingo';
     const token = await getAccessToken(cfg.refresh_token);
-    const eventos = await getEventsForDay(token, date, timezone);
 
-    // Parsear fecha y hora
-    const [y, m, d] = date.split('-').map(Number);
-    const [hh, mm] = time.split(':').map(Number);
+    // Parsear dateTime (esperado: YYYY-MM-DDTHH:mm:ss-04:00)
+    const dateTimeMatch = dateTime.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!dateTimeMatch) {
+      return res.status(400).json({ error: 'Formato de dateTime inválido. Esperado: YYYY-MM-DDTHH:mm:ss-04:00' });
+    }
+    const [_, y, m, d, hh, mm] = dateTimeMatch.map(Number);
+
+    // Obtener eventos para el día
+    const date = `${y}-${pad(m)}-${pad(d)}`;
+    const eventos = await getEventsForDay(token, date, timezone);
 
     // Formatear fechas en ISO 8601 con offset -04:00
     const startISO = `${y}-${pad(m)}-${pad(d)}T${pad(hh)}:${pad(mm)}:00-04:00`;
@@ -37,12 +43,13 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const endDate = new Date(Date.UTC(y, m - 1, d, hh + 4, mm + dur));
     const endISO = `${y}-${pad(m)}-${pad(d)}T${pad(endDate.getUTCHours())}:${pad(endDate.getUTCMinutes())}:00-04:00`;
 
-    // Crear fechas para comparación de solapamientos (en UTC para consistencia)
+    // Crear fechas para comparación de solapamientos (en UTC)
     const localStart = new Date(Date.UTC(y, m - 1, d, hh + 4, mm));
     const localEnd = new Date(localStart.getTime() + dur * 60000);
 
     // Depuración: Imprimir fechas
-    console.log('Fecha de entrada (date, time):', date, time);
+    console.log('Fecha de entrada (dateTime):', dateTime);
+    console.log('Fecha parseada (date, time):', date, `${pad(hh)}:${pad(mm)}`);
     console.log('localStart (UTC):', localStart.toISOString());
     console.log('localEnd (UTC):', localEnd.toISOString());
     console.log('startISO:', startISO);
