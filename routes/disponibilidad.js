@@ -2,7 +2,8 @@
 import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
-import { DateTime } from 'luxon'; // 🕓 usar Luxon
+import { DateTime } from 'luxon';
+import { getDateTimeFromStrings } from '../utils/fechas.js';
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.post('/:slug/disponibilidad', async (req, res) => {
       return res.status(404).json({ available: false, message: 'Negocio no encontrado' });
     }
 
+    const timezone = cfg.timezone || 'America/Santo_Domingo';
     const access = await getAccessToken(cfg.refresh_token);
     const events = await getEventsForDay(access, date);
 
@@ -28,11 +30,7 @@ router.post('/:slug/disponibilidad', async (req, res) => {
       return res.json({ available: false, message: 'Día completo' });
     }
 
-    const timezone = cfg.timezone || 'America/Santo_Domingo';
-    const [year, month, day] = date.split('-').map(Number);
-    const [hour, minute] = time.split(':').map(Number);
-
-    const slotStart = DateTime.fromObject({ year, month, day, hour, minute }, { zone: timezone });
+    const slotStart = getDateTimeFromStrings(date, time, timezone);
     const slotEnd = slotStart.plus({ minutes: cfg.duration_minutes ?? 30 });
 
     const solapados = events.filter(ev => {
@@ -68,6 +66,7 @@ router.get('/api/availability/:slug', async (req, res) => {
       return res.status(404).json({ available: false, message: 'Negocio no encontrado' });
     }
 
+    const timezone = cfg.timezone || 'America/Santo_Domingo';
     const access = await getAccessToken(cfg.refresh_token);
     const events = await getEventsForDay(access, date);
 
@@ -75,11 +74,7 @@ router.get('/api/availability/:slug', async (req, res) => {
       return res.json({ available: false, message: 'Día completo' });
     }
 
-    const timezone = cfg.timezone || 'America/Santo_Domingo';
-    const [year, month, day] = date.split('-').map(Number);
-    const [hour, minute] = time.split(':').map(Number);
-
-    const start = DateTime.fromObject({ year, month, day, hour, minute }, { zone: timezone });
+    const start = getDateTimeFromStrings(date, time, timezone);
     const end = start.plus({ minutes: cfg.duration_minutes ?? 30 });
 
     const solapados = events.filter(ev => {
