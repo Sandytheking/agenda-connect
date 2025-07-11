@@ -14,7 +14,7 @@ export async function getAccessToken(refresh_token) {
   return token;
 }
 
-export async function getEventsForDay(accessToken, date) {
+export async function getEventsForDay(accessToken, date, timezone = 'America/Santo_Domingo') {
   console.log("🔐 Usando access_token:", accessToken?.slice(0, 20), "...");
 
   const oAuth2Client = new google.auth.OAuth2(
@@ -32,21 +32,18 @@ export async function getEventsForDay(accessToken, date) {
   }
 
   const [y, m, d] = date.split('-').map(Number);
-  const start = new Date(y, m - 1, d, 0, 0, 0);
-  const end   = new Date(y, m - 1, d, 23, 59, 59, 999);
-
-  const toIsoLocal = (dt) => dt.toISOString().replace(/Z$/, '');
+  const start = new Date(Date.UTC(y, m - 1, d, 4, 0, 0)); // Ajustar a UTC (4 horas después de 00:00 en Santo Domingo)
+  const end = new Date(Date.UTC(y, m - 1, d + 1, 3, 59, 59, 999)); // Hasta 23:59:59 en Santo Domingo
 
   try {
     const res = await calendar.events.list({
-  calendarId   : 'primary',
-  timeMin      : start.toISOString(), // ✅ con Z al final
-  timeMax      : end.toISOString(),   // ✅ con Z al final
-  singleEvents : true,
-  orderBy      : 'startTime'
-  // ⛔ No incluyas timeZone aquí en events.list, Google lo ignora y puede causar error
+      calendarId: 'primary',
+      timeMin: start.toISOString(),
+      timeMax: end.toISOString(),
+      timeZone: timezone, // Especificar la zona horaria en la consulta
+      singleEvents: true,
+      orderBy: 'startTime'
     });
-
 
     console.log("✅ Eventos recibidos:", res.data.items?.length || 0);
     return res.data.items.map(ev => ({

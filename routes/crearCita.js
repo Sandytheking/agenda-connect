@@ -2,9 +2,12 @@ import express from 'express';
 import { google } from 'googleapis';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
-import { DateTime } from 'luxon';
 
 const router = express.Router();
+
+function pad(n) {
+  return n.toString().padStart(2, '0');
+}
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const { slug } = req.params;
@@ -22,37 +25,40 @@ router.post('/:slug/crear-cita', async (req, res) => {
 
     const timezone = cfg.timezone || 'America/Santo_Domingo';
     const token = await getAccessToken(cfg.refresh_token);
-    const eventos = await getEventsForDay(token, date);
+    const eventos = await getEventsForDay(token, date, timezone);
 
     // Parsear fecha y hora
     const [y, m, d] = date.split('-').map(Number);
     const [hh, mm] = time.split(':').map(Number);
 
-    // Crear DateTime en la zona horaria especificada
-    const localStart = DateTime.fromObject(
-      { year: y, month: m, day: d, hour: hh, minute: mm },
-      { zone: timezone }
-    );
-    if (!localStart.isValid) {
-      return res.status(400).json({ error: 'Fecha u hora inválida' });
-    }
-
+    // Formatear fechas en ISO 8601 con offset -04:00
+    const startISO = `${y}-${pad(m)}-${pad(d)}T${pad(hh)}:${pad(mm)}:00-04:00`;
     const dur = Number(duration || cfg.duration_minutes || 30);
-    const localEnd = localStart.plus({ minutes: dur });
+    const endDate = new Date(Date.UTC(y, m - 1, d, hh + 4, mm + dur));
+    const endISO = `${y}-${pad(m)}-${pad(d)}T${pad(endDate.getUTCHours())}:${pad(endDate.getUTCMinutes())}:00-04:00`;
+
+    // Crear fechas para comparación de solapamientos (en UTC para consistencia)
+    const localStart = new Date(Date.UTC(y, m - 1, d, hh + 4, mm));
+    const localEnd = new Date(localStart.getTime() + dur * 60000);
 
     // Depuración: Imprimir fechas
     console.log('Fecha de entrada (date, time):', date, time);
-    console.log('localStart (DateTime):', localStart.toString());
-    console.log('localEnd (DateTime):', localEnd.toString());
+    console.log('localStart (UTC):', localStart.toISOString());
+    console.log('localEnd (UTC):', localEnd.toISOString());
+    console.log('startISO:', startISO);
+    console.log('endISO:', endISO);
+    console.log('timezone:', timezone);
 
     // Verificar solapamientos
     const solapados = eventos.filter(ev => {
-      const s = DateTime.fromISO(ev.start.dateTime, { zone: timezone });
-      const e = DateTime.fromISO(ev.end.dateTime, { zone: timezone });
+      const s = new Date(ev.start);
+      const e = new Date(ev.end);
+      console.log('Evento existente:', { start: ev.start, end: ev.end });
       return s < localEnd && localStart < e;
     });
 
     if (solapados.length > 0) {
+      console.log('Solapamientos encontrados:', solapados);
       return res.status(409).json({ error: 'Ya hay una cita en ese horario' });
     }
 
@@ -62,15 +68,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
     );
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
-
-    // Formatear fechas en ISO 8601 con desplazamiento explícito
-    const startISO = localStart.toISO({ suppressMilliseconds: true });
-    const endISO = localEnd.toISO({ suppressMilliseconds: true });
-
-    // Depuración: Imprimir cadenas ISO
-    console.log('startISO:', startISO);
-    console.log('endISO:', endISO);
-    console.log('timezone:', timezone);
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
