@@ -3,192 +3,229 @@
 <head>
   <meta charset="UTF-8" />
   <title>Reservar cita</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:2rem;background:#f4f6fa}
-    .card{max-width:480px;margin:auto;background:#fff;padding:2rem;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
-    h2{margin-top:0;color:#1a1a1a}
-    label{display:block;margin:12px 0 4px;font-weight:600}
-    input,select,button{width:100%;padding:.6rem .8rem;border:1px solid #ccc;border-radius:6px;font-size:1rem}
-    button{background:#0063f7;color:#fff;border:none;margin-top:1.2rem;cursor:pointer}
-    #msg{margin-top:1rem;font-size:.9rem}
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: #f4f6fa;
+    }
+
+    .card {
+      max-width: 480px;
+      margin: auto;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #1a1a1a;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    input:focus, select:focus {
+      outline: 2px solid #4a90e2;
+      border-color: transparent;
+    }
+
+    button {
+      background: #0063f7;
+      color: #fff;
+      border: none;
+      margin-top: 1.5rem;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #004fc4;
+    }
+
+    #msg {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      color: #d9534f;
+    }
+
+    #msg.success {
+      color: green;
+    }
   </style>
 </head>
 <body>
-<div class="card">
-  <h2 id="negocio">Reservar cita</h2>
+  <div class="card">
+    <h2 id="negocio">Reservar cita</h2>
 
-  <label>Nombre</label>
-  <input id="name" />
+    <label>Nombre</label>
+    <input id="name" placeholder="Tu nombre" />
 
-  <label>Email</label>
-  <input id="email" type="email" />
+    <label>Email</label>
+    <input id="email" type="email" placeholder="ejemplo@correo.com" />
 
-  <label>Teléfono</label>
-  <input id="phone" />
+    <label>Teléfono</label>
+    <input id="phone" placeholder="Tu número" />
 
-  <label>Fecha</label>
-  <input id="date" type="date" />
+    <label>Fecha</label>
+    <input id="date" type="date" />
 
-  <label>Hora</label>
-  <select id="time"><option value="">Selecciona primero la fecha…</option></select>
+    <label>Hora</label>
+    <select id="time"><option value="">Selecciona primero la fecha…</option></select>
 
-  <button id="btn">Reservar</button>
-  <div id="msg"></div>
-</div>
+    <button id="btn">Reservar</button>
+    <div id="msg"></div>
+  </div>
 
-<script>
-const $   = s => document.querySelector(s);
-const api = 'https://agenda-connect.onrender.com';
+  <script>
+    const $   = s => document.querySelector(s);
+    const api = 'https://agenda-connect.onrender.com';
 
-// Obtener slug desde URL
-/* 1️⃣  Obtener slug de la query ?slug=... */
-const params = new URLSearchParams(location.search);
-const slug   = params.get('slug');        // ej. "ramon-peluqueria"
+    const params = new URLSearchParams(location.search);
+    const slug   = params.get('slug');
 
-if (!slug) {
-  $('#msg').textContent = 'Slug no especificado';
-  $('#btn').disabled = true;
-}
+    if (!slug) {
+      $('#msg').textContent = '❌ Falta el identificador del negocio (slug)';
+      $('#btn').disabled = true;
+    }
 
-if (!slug) {
-  $('#msg').textContent = '❌ Falta slug';
-  $('#btn').disabled = true;
-} else {
-  $('#msg').textContent = `🔎 Buscando «${slug}»…`;   // ← verás qué valor lee
-}
+    let cfg = null;
 
+    (async () => {
+      try {
+        const res = await fetch(${api}/api/public-config/${slug});
+        cfg = await res.json();
+        if (!res.ok || !cfg.nombre) throw new Error(cfg.error || 'Negocio no encontrado');
 
-let cfg = null;
+        $('#negocio').textContent = Reservar en ${cfg.nombre};
 
-(async () => {
-  try {
-    const res = await fetch(`${api}/api/public-config/${slug}`);
-    cfg = await res.json();
-    console.log('🛠 CFG:', cfg); // ← Agrega esta línea
-    if (!res.ok || !cfg.nombre) throw new Error(cfg.error || 'Negocio no encontrado');
+        // Bloquear fechas pasadas
+        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+        $('#date').min = hoy.toISOString().split('T')[0];
 
-    $('#negocio').textContent = `Reservar en ${cfg.nombre}`;
+        const diasLaborables = cfg.work_days || [];
+        console.log("📦 work_days recibidos:", diasLaborables);
 
-    // Bloquear fechas pasadas
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    $('#date').min = hoy.toISOString().split('T')[0];
+        $('#date').addEventListener('change', e => {
+          if (!e.target.value) return;
 
-// ✅ Convertir nombres de días a números (0 = Domingo, 1 = Lunes, ...)
-  const diasLaborables = cfg.work_days || [];
-console.log("📦 work_days recibidos:", cfg.work_days);
+          const [y, m, d] = e.target.value.split('-').map(Number);
+          const fecha = new Date(y, m - 1, d, 12, 0, 0);
+          const dia = fecha.getDay();
 
-$('#date').addEventListener('change', e => {
-  if (!e.target.value) return;                 // nada seleccionado
+          if (!diasLaborables.includes(dia)) {
+            $('#msg').textContent = '⛔ El negocio no abre ese día';
+            $('#time').innerHTML = '<option></option>';
+            return;
+          }
 
-  // Construimos la fecha local (sin problemas de zona horaria)
-  const [y, m, d] = e.target.value.split('-').map(Number);
-  const fecha = new Date(y, m - 1, d, 12, 0, 0); // 12 h local para evitar desfases
-  const dia   = fecha.getDay();                 // 0‑6 (Dom‑Sáb)
+          $('#msg').textContent = '';
+          cargarHorasDisponibles(e.target.value);
+        });
+      } catch (err) {
+        console.error(err);
+        $('#msg').textContent = err.message;
+        $('#btn').disabled = true;
+      }
+    })();
 
-  console.log('👉 Día elegido =', dia, '• Laborables =', diasLaborables);
+    function generarSlots() {
+      const paso = Number(cfg.duration_minutes || 30);
+      const [sh, sm] = cfg.start_hour.split(':').map(Number);
+      const [eh, em] = cfg.end_hour.split(':').map(Number);
 
-  if (!diasLaborables.includes(dia)) {
-    $('#msg').textContent = '⛔ El negocio no abre ese día';
-    $('#time').innerHTML  = '<option></option>';
-    return;
-  }
+      const slots = [];
+      const cursor = new Date();
+      cursor.setHours(sh, sm, 0, 0);
 
-  $('#msg').textContent = '';
-  cargarHorasDisponibles(e.target.value);       // 'YYYY‑MM‑DD'
-});
+      const fin = new Date();
+      fin.setHours(eh, em, 0, 0);
 
+      if (fin <= cursor) return [];
 
-  } catch (err) {
-    console.error(err);
-    $('#msg').textContent = err.message;
-    $('#btn').disabled = true;
-  }
-})();
+      while (cursor < fin) {
+        const HH = String(cursor.getHours()).padStart(2, '0');
+        const MM = String(cursor.getMinutes()).padStart(2, '0');
+        slots.push(${HH}:${MM});
+        cursor.setMinutes(cursor.getMinutes() + paso);
+      }
 
+      return slots;
+    }
 
+    async function cargarHorasDisponibles(fechaISO) {
+      $('#time').innerHTML = '<option>Cargando…</option>';
+      $('#time').disabled  = true;
 
-/* === generar la lista de horarios === */
-function generarSlots() {
-  const paso   = Number(cfg.duration_minutes || 30);   // minutos
-  const [sh, sm] = cfg.start_hour.split(':').map(Number); // ej 08,30
-  const [eh, em] = cfg.end_hour  .split(':').map(Number); // ej 18,00
+      const libres = [];
+      for (const h of generarSlots()) {
+        const r = await fetch(${api}/api/availability/${slug}?date=${fechaISO}&time=${h});
+        const { available } = await r.json();
+        if (available) libres.push(h);
+      }
 
-  const lista  = [];
-  const cur    = new Date();
-  cur.setHours(sh, sm, 0, 0);          // inicio real (hh, mm)
-
-  const fin    = new Date();
-  fin.setHours(eh, em, 0, 0);          // fin real (hh, mm)
-
-  /* si fin ≤ inicio, salimos para evitar bucle infinito */
-  if (fin <= cur) return lista;
-
-  while (cur < fin) {
-    const HH = String(cur.getHours()).padStart(2, '0');
-    const MM = String(cur.getMinutes()).padStart(2, '0');
-    lista.push(`${HH}:${MM}`);
-    cur.setMinutes(cur.getMinutes() + paso);
-  }
-  return lista;
-}
-
-async function cargarHorasDisponibles(fechaISO){
-  $('#time').innerHTML = '<option>Cargando…</option>';
-  $('#time').disabled  = true;
-
-  const libres = [];
-  for (const h of generarSlots()){
-    const r   = await fetch(`${api}/api/availability/${slug}?date=${fechaISO}&time=${h}`);
-    const { available } = await r.json();
-    if (available) libres.push(h);
-  }
-
-  $('#time').innerHTML = libres.length
-        ? `<option value=""></option>${libres.map(h=>`<option value="${h}">${h}</option>`).join('')}`
+      $('#time').innerHTML = libres.length
+        ? <option value=""></option>${libres.map(h => <option value="${h}">${h}</option>).join('')}
         : '<option>No hay horas libres</option>';
-  $('#time').disabled = !libres.length;
-}
 
-$('#btn').onclick = async () => {
-  const name  = $('#name').value.trim();
-  const email = $('#email').value.trim();
-  const phone = $('#phone').value.trim();
-  const date  = $('#date').value;
-  const time  = $('#time').value;
+      $('#time').disabled = !libres.length;
+    }
 
-  if (!name || !email || !date || !time) {
-    $('#msg').textContent = 'Completa todos los campos';
-    return;
-  }
+    $('#btn').onclick = async () => {
+      const name  = $('#name').value.trim();
+      const email = $('#email').value.trim();
+      const phone = $('#phone').value.trim();
+      const date  = $('#date').value;
+      const time  = $('#time').value;
 
-  $('#btn').disabled = true;
-  $('#msg').textContent = 'Enviando…';
+      if (!name || !email || !date || !time) {
+        $('#msg').textContent = 'Completa todos los campos';
+        return;
+      }
 
-  const res = await fetch(`${api}/api/citas/${slug}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, phone, date, time })
-  });
+      $('#btn').disabled = true;
+      $('#msg').textContent = 'Enviando…';
 
+      const res = await fetch(${api}/api/citas/${slug}, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name, email, phone, date, time,
+          duration: cfg.duration_minutes || 30
+        })
+      });
 
-  const json = await res.json();
-  $('#btn').disabled = false;
+      const json = await res.json();
+      $('#btn').disabled = false;
 
-  if (res.ok) {
-    $('#msg').textContent = '✅ Cita creada. Revisa tu correo.';
-    $('#btn').style.display = 'none';
-  } else {
-    $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
-  }
-  body: JSON.stringify({
-  name, email, phone,
-  startISO : `${date}T${time}:00`,
-  duration : cfg.duration_minutes || 30
-})
-
-};
-</script>
+      if (res.ok) {
+        $('#msg').textContent = '✅ Cita creada. Revisa tu correo.';
+        $('#msg').classList.add('success');
+        $('#btn').style.display = 'none';
+      } else {
+        $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
+      }
+    };
+  </script>
 </body>
 </html>
