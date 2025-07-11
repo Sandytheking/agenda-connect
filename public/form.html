@@ -90,6 +90,7 @@
       text-align: center;
       color: #444;
     }
+    
   </style>
 </head>
 <body>
@@ -114,10 +115,7 @@
     <div id="msg"></div>
   </div>
 
-<script type="module">
-import { DateTime } from 'https://cdn.jsdelivr.net/npm/luxon@3.4.4/+esm';
-import { generarSlots, isWorkingDay, getMinDate } from './fechas.js';
-
+<script>
 const $ = s => document.querySelector(s);
 const api = 'https://agenda-connect.onrender.com';
 const params = new URLSearchParams(location.search);
@@ -131,17 +129,21 @@ let cfg = null;
     cfg = await res.json();
     if (!res.ok || !cfg.nombre) throw new Error(cfg.error || 'Negocio no encontrado');
     $('#negocio').textContent = `Reservar en ${cfg.nombre}`;
-    $('#date').min = getMinDate();
-    $('#date').addEventListener('change', async e => {
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    $('#date').min = hoy.toISOString().split('T')[0];
+    const diasLaborables = cfg.work_days || [];
+    $('#date').addEventListener('change', e => {
       if (!e.target.value) return;
-      if (!isWorkingDay(e.target.value, cfg)) {
+      const [y, m, d] = e.target.value.split('-').map(Number);
+      const fecha = new Date(y, m - 1, d, 12);
+      const dia = fecha.getDay();
+      if (!diasLaborables.includes(dia)) {
         $('#msg').textContent = '⛔ El negocio no abre ese día';
-        $('#time').innerHTML = '<option value="">Selecciona primero la fecha…</option>';
-        $('#date').value = '';
+        $('#time').innerHTML = '<option></option>';
         return;
       }
       $('#msg').textContent = '';
-      await cargarHorasDisponibles(e.target.value);
+      cargarHorasDisponibles(e.target.value);
     });
   } catch (err) {
     console.error(err);
@@ -150,17 +152,34 @@ let cfg = null;
   }
 })();
 
-async function cargarHorasDisponibles(fechaISO) {
+function generarSlots() {
+  const paso = Number(cfg.duration_minutes || 30);
+  const [sh, sm] = cfg.start_hour.split(':').map(Number);
+  const [eh, em] = cfg.end_hour.split(':').map(Number);
+  const lista = [];
+  const cur = new Date(); cur.setHours(sh, sm, 0, 0);
+  const fin = new Date(); fin.setHours(eh, em, 0, 0);
+  if (fin <= cur) return lista;
+  while (cur < fin) {
+    const HH = String(cur.getHours()).padStart(2, '0');
+    const MM = String(cur.getMinutes()).padStart(2, '0');
+    lista.push(`${HH}:${MM}`);
+    cur.setMinutes(cur.getMinutes() + paso);
+  }
+  return lista;
+}
+
+async function cargarHorasDisponibles(fechaISO){
   $('#time').innerHTML = '<option>Cargando…</option>';
   $('#time').disabled = true;
   const libres = [];
-  for (const h of generarSlots(fechaISO, cfg)) {
+  for (const h of generarSlots()){
     const r = await fetch(`${api}/api/availability/${slug}?date=${fechaISO}&time=${h}`);
     const { available } = await r.json();
     if (available) libres.push(h);
   }
   $('#time').innerHTML = libres.length
-    ? `<option value="">Selecciona una hora</option>${libres.map(h => `<option value="${h}">${h}</option>`).join('')}`
+    ? `<option value=""></option>${libres.map(h=>`<option value="${h}">${h}</option>`).join('')}`
     : '<option>No hay horas libres</option>';
   $('#time').disabled = !libres.length;
 }
@@ -177,11 +196,10 @@ $('#btn').onclick = async () => {
   }
   $('#btn').disabled = true;
   $('#msg').textContent = 'Enviando…';
-  console.log('Payload:', { name, email, phone, date, time, duration: cfg.duration_minutes || 30 });
-  const res = await fetch(`${api}/api/citas/${slug}/crear-cita`, {
+  const res = await fetch(`${api}/api/citas/${slug}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, phone, date, time, duration: cfg.duration_minutes || 30 })
+    body: JSON.stringify({ name, email, phone, date, time })
   });
   const json = await res.json();
   $('#btn').disabled = false;
