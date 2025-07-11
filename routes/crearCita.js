@@ -2,7 +2,7 @@ import express from 'express';
 import { google } from 'googleapis';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
-import { DateTime } from 'luxon'; // Importar luxon
+import { DateTime } from 'luxon';
 
 const router = express.Router();
 
@@ -24,7 +24,7 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const token = await getAccessToken(cfg.refresh_token);
     const eventos = await getEventsForDay(token, date);
 
-    // Parsear la fecha y hora en la zona horaria correcta
+    // Parsear fecha y hora
     const [y, m, d] = date.split('-').map(Number);
     const [hh, mm] = time.split(':').map(Number);
 
@@ -39,6 +39,11 @@ router.post('/:slug/crear-cita', async (req, res) => {
 
     const dur = Number(duration || cfg.duration_minutes || 30);
     const localEnd = localStart.plus({ minutes: dur });
+
+    // Depuración: Imprimir fechas
+    console.log('Fecha de entrada (date, time):', date, time);
+    console.log('localStart (DateTime):', localStart.toString());
+    console.log('localEnd (DateTime):', localEnd.toString());
 
     // Verificar solapamientos
     const solapados = eventos.filter(ev => {
@@ -58,9 +63,14 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    // Formatear las fechas en ISO 8601 con la zona horaria
-    const startISO = localStart.toISO(); // Incluye el offset, ej. 2025-07-10T14:00:00-04:00
-    const endISO = localEnd.toISO();
+    // Formatear fechas en ISO 8601 con desplazamiento explícito
+    const startISO = localStart.toISO({ suppressMilliseconds: true });
+    const endISO = localEnd.toISO({ suppressMilliseconds: true });
+
+    // Depuración: Imprimir cadenas ISO
+    console.log('startISO:', startISO);
+    console.log('endISO:', endISO);
+    console.log('timezone:', timezone);
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
@@ -81,6 +91,9 @@ router.post('/:slug/crear-cita', async (req, res) => {
         }
       }
     });
+
+    // Depuración: Imprimir evento creado
+    console.log('Evento creado:', JSON.stringify(evento.data, null, 2));
 
     res.json({ success: true, eventId: evento.data.id });
 
