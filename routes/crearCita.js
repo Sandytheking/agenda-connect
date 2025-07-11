@@ -1,18 +1,10 @@
-// 📁 routes/crearCita.js
 import express from 'express';
 import { google } from 'googleapis';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
+import { DateTime } from 'luxon'; // Importar luxon
 
 const router = express.Router();
-
-function pad(n) {
-  return n.toString().padStart(2, '0');
-}
-
-function toIsoWithoutZ(dateObj) {
-  return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}T${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
-}
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const { slug } = req.params;
@@ -32,15 +24,26 @@ router.post('/:slug/crear-cita', async (req, res) => {
     const token = await getAccessToken(cfg.refresh_token);
     const eventos = await getEventsForDay(token, date);
 
-    const [hh, mm] = time.split(":" ).map(Number);
+    // Parsear la fecha y hora en la zona horaria correcta
     const [y, m, d] = date.split('-').map(Number);
+    const [hh, mm] = time.split(':').map(Number);
 
-    const localStart = new Date(y, m - 1, d, hh, mm);
+    // Crear DateTime en la zona horaria especificada
+    const localStart = DateTime.fromObject(
+      { year: y, month: m, day: d, hour: hh, minute: mm },
+      { zone: timezone }
+    );
+    if (!localStart.isValid) {
+      return res.status(400).json({ error: 'Fecha u hora inválida' });
+    }
+
     const dur = Number(duration || cfg.duration_minutes || 30);
-    const localEnd = new Date(localStart.getTime() + dur * 60000);
+    const localEnd = localStart.plus({ minutes: dur });
 
+    // Verificar solapamientos
     const solapados = eventos.filter(ev => {
-      const s = new Date(ev.start), e = new Date(ev.end);
+      const s = DateTime.fromISO(ev.start.dateTime, { zone: timezone });
+      const e = DateTime.fromISO(ev.end.dateTime, { zone: timezone });
       return s < localEnd && localStart < e;
     });
 
@@ -55,8 +58,9 @@ router.post('/:slug/crear-cita', async (req, res) => {
     oAuth2Client.setCredentials({ access_token: token });
     const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    const startISO = toIsoWithoutZ(localStart);
-    const endISO = toIsoWithoutZ(localEnd);
+    // Formatear las fechas en ISO 8601 con la zona horaria
+    const startISO = localStart.toISO(); // Incluye el offset, ej. 2025-07-10T14:00:00-04:00
+    const endISO = localEnd.toISO();
 
     const evento = await calendar.events.insert({
       calendarId: 'primary',
