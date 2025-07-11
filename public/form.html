@@ -3,154 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <title>Reservar cita</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.gstatic.com">
   <style>
-    :root {
-      --primary: #0063f7;
-      --bg: #f8fafc;
-      --text: #1a1a1a;
-      --radius: 16px;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
-      padding: 2rem;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .card {
-      background: #fff;
-      padding: 2.5rem;
-      border-radius: var(--radius);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-      max-width: 480px;
-      width: 100%;
-    }
-
-    h2 {
-      margin-top: 0;
-      margin-bottom: 1.5rem;
-      font-weight: 600;
-      font-size: 1.5rem;
-      color: var(--text);
-      text-align: center;
-    }
-
-    label {
-      display: block;
-      margin: 1rem 0 0.5rem;
-      font-weight: 600;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      border: 1px solid #d1d5db;
-      border-radius: var(--radius);
-      background-color: #fff;
-      box-sizing: border-box;
-      transition: border-color 0.2s ease;
-    }
-
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-
-    button {
-      width: 100%;
-      padding: 0.85rem;
-      background: var(--primary);
-      border: none;
-      border-radius: var(--radius);
-      color: white;
-      font-weight: 600;
-      font-size: 1rem;
-      margin-top: 1.5rem;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    button:hover {
-      background: #0047c1;
-    }
-
-    #msg {
-      margin-top: 1rem;
-      font-size: 0.95rem;
-      text-align: center;
-      color: #444;
-    }
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:2rem;background:#f4f6fa}
+    .card{max-width:480px;margin:auto;background:#fff;padding:2rem;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+    h2{margin-top:0;color:#1a1a1a}
+    label{display:block;margin:12px 0 4px;font-weight:600}
+    input,select,button{width:100%;padding:.6rem .8rem;border:1px solid #ccc;border-radius:6px;font-size:1rem}
+    button{background:#0063f7;color:#fff;border:none;margin-top:1.2rem;cursor:pointer}
+    #msg{margin-top:1rem;font-size:.9rem}
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2 id="negocio">Reservar cita</h2>
-    <label>Nombre</label>
-    <input id="name" />
+<div class="card">
+  <h2 id="negocio">Reservar cita</h2>
 
-    <label>Email</label>
-    <input id="email" type="email" />
+  <label>Nombre</label>
+  <input id="name" />
 
-    <label>Teléfono</label>
-    <input id="phone" />
+  <label>Email</label>
+  <input id="email" type="email" />
 
-    <label>Fecha y hora (Santo Domingo, UTC-4)</label>
-    <input id="datetime" type="datetime-local" />
+  <label>Teléfono</label>
+  <input id="phone" />
 
-    <button id="btn">Reservar</button>
-    <div id="msg"></div>
-  </div>
+  <label>Fecha</label>
+  <input id="date" type="date" />
 
-<script type="module">
-import { formatInTimeZone, toDate } from 'https://cdn.jsdelivr.net/npm/date-fns-tz@2/+esm';
-import { startOfDay, addMinutes, format } from 'https://cdn.jsdelivr.net/npm/date-fns@3/+esm';
+  <label>Hora</label>
+  <select id="time"><option value="">Selecciona primero la fecha…</option></select>
 
-const $ = s => document.querySelector(s);
+  <button id="btn">Reservar</button>
+  <div id="msg"></div>
+</div>
+
+<script>
+const $   = s => document.querySelector(s);
 const api = 'https://agenda-connect.onrender.com';
-const params = new URLSearchParams(location.search);
-const slug = params.get('slug');
-const timezone = 'America/Santo_Domingo';
 
-if (!slug) { $('#msg').textContent = '❌ Falta slug'; $('#btn').disabled = true; }
+// Obtener slug desde URL
+/* 1️⃣  Obtener slug de la query ?slug=... */
+const params = new URLSearchParams(location.search);
+const slug   = params.get('slug');        // ej. "ramon-peluqueria"
+
+if (!slug) {
+  $('#msg').textContent = 'Slug no especificado';
+  $('#btn').disabled = true;
+}
+
+if (!slug) {
+  $('#msg').textContent = '❌ Falta slug';
+  $('#btn').disabled = true;
+} else {
+  $('#msg').textContent = `🔎 Buscando «${slug}»…`;   // ← verás qué valor lee
+}
+
 
 let cfg = null;
+
 (async () => {
   try {
     const res = await fetch(`${api}/api/public-config/${slug}`);
     cfg = await res.json();
+    console.log('🛠 CFG:', cfg); // ← Agrega esta línea
     if (!res.ok || !cfg.nombre) throw new Error(cfg.error || 'Negocio no encontrado');
+
     $('#negocio').textContent = `Reservar en ${cfg.nombre}`;
-    const hoy = startOfDay(new Date());
-    $('#datetime').min = formatInTimeZone(hoy, timezone, "yyyy-MM-dd'T'HH:mm");
-    $('#datetime').addEventListener('change', async e => {
-      if (!e.target.value) return;
-      const selectedDateTime = toDate(e.target.value, { timeZone: timezone });
-      const [y, m, d] = formatInTimeZone(selectedDateTime, timezone, 'yyyy-MM-dd').split('-').map(Number);
-      const fecha = new Date(y, m - 1, d);
-      const dia = fecha.getDay();
-      const diasLaborables = cfg.work_days || [];
-      if (!diasLaborables.includes(dia)) {
-        $('#msg').textContent = '⛔ El negocio no abre ese día';
-        $('#datetime').value = '';
-        return;
-      }
-      $('#msg').textContent = '';
-      const isAvailable = await checkAvailability(selectedDateTime);
-      if (!isAvailable) {
-        $('#msg').textContent = '⛔ Esa hora no está disponible';
-        $('#datetime').value = '';
-      }
-    });
+
+    // Bloquear fechas pasadas
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    $('#date').min = hoy.toISOString().split('T')[0];
+
+// ✅ Convertir nombres de días a números (0 = Domingo, 1 = Lunes, ...)
+  const diasLaborables = cfg.work_days || [];
+console.log("📦 work_days recibidos:", cfg.work_days);
+
+$('#date').addEventListener('change', e => {
+  if (!e.target.value) return;                 // nada seleccionado
+
+  // Construimos la fecha local (sin problemas de zona horaria)
+  const [y, m, d] = e.target.value.split('-').map(Number);
+  const fecha = new Date(y, m - 1, d, 12, 0, 0); // 12 h local para evitar desfases
+  const dia   = fecha.getDay();                 // 0‑6 (Dom‑Sáb)
+
+  console.log('👉 Día elegido =', dia, '• Laborables =', diasLaborables);
+
+  if (!diasLaborables.includes(dia)) {
+    $('#msg').textContent = '⛔ El negocio no abre ese día';
+    $('#time').innerHTML  = '<option></option>';
+    return;
+  }
+
+  $('#msg').textContent = '';
+  cargarHorasDisponibles(e.target.value);       // 'YYYY‑MM‑DD'
+});
+
+
   } catch (err) {
     console.error(err);
     $('#msg').textContent = err.message;
@@ -158,59 +107,87 @@ let cfg = null;
   }
 })();
 
-function generarSlots(selectedDate) {
-  const paso = Number(cfg.duration_minutes || 30);
-  const [sh, sm] = cfg.start_hour.split(':').map(Number);
-  const [eh, em] = cfg.end_hour.split(':').map(Number);
-  const lista = [];
-  let cur = toDate(`${format(selectedDate, 'yyyy-MM-dd')}T${pad(sh)}:${pad(sm)}:00`, { timeZone: timezone });
-  const fin = toDate(`${format(selectedDate, 'yyyy-MM-dd')}T${pad(eh)}:${pad(em)}:00`, { timeZone: timezone });
+
+
+/* === generar la lista de horarios === */
+function generarSlots() {
+  const paso   = Number(cfg.duration_minutes || 30);   // minutos
+  const [sh, sm] = cfg.start_hour.split(':').map(Number); // ej 08,30
+  const [eh, em] = cfg.end_hour  .split(':').map(Number); // ej 18,00
+
+  const lista  = [];
+  const cur    = new Date();
+  cur.setHours(sh, sm, 0, 0);          // inicio real (hh, mm)
+
+  const fin    = new Date();
+  fin.setHours(eh, em, 0, 0);          // fin real (hh, mm)
+
+  /* si fin ≤ inicio, salimos para evitar bucle infinito */
   if (fin <= cur) return lista;
+
   while (cur < fin) {
-    lista.push(formatInTimeZone(cur, timezone, "yyyy-MM-dd'T'HH:mm:ssXXX"));
-    cur = addMinutes(cur, paso);
+    const HH = String(cur.getHours()).padStart(2, '0');
+    const MM = String(cur.getMinutes()).padStart(2, '0');
+    lista.push(`${HH}:${MM}`);
+    cur.setMinutes(cur.getMinutes() + paso);
   }
   return lista;
 }
 
-function pad(n) {
-  return String(n).padStart(2, '0');
-}
+async function cargarHorasDisponibles(fechaISO){
+  $('#time').innerHTML = '<option>Cargando…</option>';
+  $('#time').disabled  = true;
 
-async function checkAvailability(dateTime) {
-  const date = formatInTimeZone(dateTime, timezone, 'yyyy-MM-dd');
-  const time = formatInTimeZone(dateTime, timezone, 'HH:mm');
-  const r = await fetch(`${api}/api/availability/${slug}?date=${date}&time=${time}`);
-  const { available } = await r.json();
-  return available;
+  const libres = [];
+  for (const h of generarSlots()){
+    const r   = await fetch(`${api}/api/availability/${slug}?date=${fechaISO}&time=${h}`);
+    const { available } = await r.json();
+    if (available) libres.push(h);
+  }
+
+  $('#time').innerHTML = libres.length
+        ? `<option value=""></option>${libres.map(h=>`<option value="${h}">${h}</option>`).join('')}`
+        : '<option>No hay horas libres</option>';
+  $('#time').disabled = !libres.length;
 }
 
 $('#btn').onclick = async () => {
-  const name = $('#name').value.trim();
+  const name  = $('#name').value.trim();
   const email = $('#email').value.trim();
   const phone = $('#phone').value.trim();
-  const dateTime = $('#datetime').value;
-  if (!name || !email || !dateTime) {
+  const date  = $('#date').value;
+  const time  = $('#time').value;
+
+  if (!name || !email || !date || !time) {
     $('#msg').textContent = 'Completa todos los campos';
     return;
   }
-  const parsedDateTime = toDate(dateTime, { timeZone: timezone });
-  const dateTimeISO = formatInTimeZone(parsedDateTime, timezone, "yyyy-MM-dd'T'HH:mm:ssXXX");
+
   $('#btn').disabled = true;
   $('#msg').textContent = 'Enviando…';
-  const res = await fetch(`${api}/api/citas/${slug}/crear-cita`, {
+
+  const res = await fetch(`${api}/api/citas/${slug}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, phone, dateTime: dateTimeISO, duration: cfg.duration_minutes || 30 })
+    body: JSON.stringify({ name, email, phone, date, time })
   });
+
+
   const json = await res.json();
   $('#btn').disabled = false;
+
   if (res.ok) {
     $('#msg').textContent = '✅ Cita creada. Revisa tu correo.';
     $('#btn').style.display = 'none';
   } else {
     $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
   }
+  body: JSON.stringify({
+  name, email, phone,
+  startISO : `${date}T${time}:00`,
+  duration : cfg.duration_minutes || 30
+})
+
 };
 </script>
 </body>
