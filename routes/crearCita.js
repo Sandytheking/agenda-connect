@@ -1,83 +1,82 @@
 // 📁 routes/crearCita.js
-import express            from 'express';
-import { google }         from 'googleapis';
+import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
-import { getAccessToken,
-         getEventsForDay } from '../utils/google.js';
+import { getAccessToken, getEventsForDay } from '../utils/google.js';
+import { google } from 'googleapis';
+import { verifyAuth } from '../middleware/verifyAuth.js';
 
 const router = express.Router();
 
-router.post('/:slug/crear-cita', async (req, res) => {
+router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
+  const slug = req.params.slug;
+  const { name, email, phone, date, time } = req.body;
+
+  if (!name || !email || !date || !time) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  }
+
   try {
-    const { slug }      = req.params;
-    const { name, email, phone, date, time } = req.body;   // "YYYY‑MM‑DD", "HH:mm"
-
-    if (!name || !email || !date || !time) {
-      return res.status(400).json({ error:'Faltan campos obligatorios' });
+    const config = await getConfigBySlug(slug);
+    if (!config || !config.refresh_token) {
+      return res.status(404).json({ error: 'Negocio no encontrado o sin token' });
     }
 
-    /* ① Config del negocio */
-    const cfg = await getConfigBySlug(slug);
-    if (!cfg || !cfg.refresh_token) {
-      return res.status(404).json({ error:'Negocio no encontrado' });
-    }
+    const accessToken = await getAccessToken(config.refresh_token);
 
-    /* ② Verificar que el slot siga libre */
-    const token   = await getAccessToken(cfg.refresh_token);
-    const events  = await getEventsForDay(token, date);
+    // 🔁 Construir fecha localmente sin desfase de UTC
+    const [year, month, day] = date.split('-').map(Number);       // "2025-07-12"
+    const [h, m] = time.split(":").map(Number);       // "09:30"
+    const start = new Date(year, month - 1, day, h, m, 0, 0);       // Local time
+    const end   = new Date(start.getTime() + (config.duration_minutes || 30) * 60000);
 
-    const [hh, mm]       = time.split(':').map(Number);
-    const [y, m, d]      = date.split('-').map(Number);
-    const startLocal     = new Date(y, m - 1, d, hh, mm, 0, 0);          // ← local
-    const endLocal       = new Date(startLocal.getTime() +
-                           (cfg.duration_minutes ?? 30) * 60000);
+    const eventos = await getEventsForDay(accessToken, date);
 
-    const haySolape = events.some(ev => {
-      const s = new Date(ev.start), e = new Date(ev.end);
-      return s < endLocal && startLocal < e;
+    const solapados = eventos.filter(ev => {
+      const eStart = new Date(ev.start);
+      const eEnd   = new Date(ev.end);
+      return eStart < end && start < eEnd;
     });
-    if (haySolape) return res.status(409).json({ error:'Hora ocupada' });
 
+    if (solapados.length > 0) {
+      return res.status(409).json({ error: 'Ya hay una cita en ese horario' });
+    }
 
-    /* ③ Insertar en Google Calendar */
-    const auth = new google.auth.OAuth2(
+    const oAuth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
     );
-    auth.setCredentials({ access_token: token });
-    const calendar = google.calendar({ version:'v3', auth });
+    oAuth2Client.setCredentials({ access_token: accessToken });
+    const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    // ⚠️  Construir cadenas SIN sufijo Z
-    const pad = n => n.toString().padStart(2, '0');
-
-const startISO = `${date}T${pad(hh)}:${pad(mm)}:00`;
-const endISO   = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}T${pad(endObj.getHours())}:${pad(endObj.getMinutes())}:00`;
-
-
-console.log('🕒 Evento →', {
-  start: startISO,
-  end  : endISO,
-  tz   : cfg.timezone || 'America/Santo_Domingo'
-});
-
-    await calendar.events.insert({
-      calendarId : 'primary',
+    const evento = await calendar.events.insert({
+      calendarId: 'primary',
       requestBody: {
-        summary     : `Cita con ${name}`,
-        description : `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
-        start       : { dateTime:startISO, timeZone: cfg.timezone || 'America/Santo_Domingo' },
-        end         : { dateTime:endISO  , timeZone: cfg.timezone || 'America/Santo_Domingo' },
-        attendees   : [{ email }],
-        reminders   : { useDefault:true }
+        summary: `Cita con ${name}`,
+        description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
+        start: {
+          dateTime: start.toISOString(),
+          timeZone: config.timezone || 'America/Santo_Domingo'
+        },
+        end: {
+          dateTime: end.toISOString(),
+          timeZone: config.timezone || 'America/Santo_Domingo'
+        },
+        attendees: [{ email }],
+        reminders: {
+          useDefault: true
+        }
       }
     });
 
-    res.json({ success:true });
+    res.json({ success: true, eventId: evento.data.id });
 
-  } catch (e) {
-    console.error('❌ Error al crear cita:', e);
-    res.status(500).json({ error:'No se pudo crear la cita' });
+  } catch (err) {
+    console.error('❌ Error al crear cita:', err);
+    res.status(500).json({ error: 'No se pudo crear la cita' });
   }
+  
+  const start = new Date(`${startISO}:00-04:00`);  // fuerza offset
+
 });
 
 export default router;
