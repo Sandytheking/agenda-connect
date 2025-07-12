@@ -1,9 +1,9 @@
-// 📁 routes/crearCita.js
 import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
 import { google } from 'googleapis';
 import { verifyAuth } from '../middleware/verifyAuth.js';
+import { getDateTimeFromStrings } from '../utils/fechas.js';
 
 const router = express.Router();
 
@@ -21,20 +21,21 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
       return res.status(404).json({ error: 'Negocio no encontrado o sin token' });
     }
 
+    const timezone = config.timezone || 'America/Santo_Domingo';
+
     const accessToken = await getAccessToken(config.refresh_token);
 
-    // 🔁 Construir fecha localmente sin desfase de UTC
-    const [year, month, day] = date.split('-').map(Number);       // "2025-07-12"
-    const [h, m] = time.split(":").map(Number);       // "09:30"
-    const start = new Date(year, month - 1, day, h, m, 0, 0);       // Local time
-    const end   = new Date(start.getTime() + (config.duration_minutes || 30) * 60000);
+    // ✅ Usa luxon para construir hora con zona
+    const startDT = getDateTimeFromStrings(date, time, timezone);
+    const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
 
+    // 🔁 Obtener eventos del día
     const eventos = await getEventsForDay(accessToken, date);
 
     const solapados = eventos.filter(ev => {
-      const eStart = new Date(ev.start);
-      const eEnd   = new Date(ev.end);
-      return eStart < end && start < eEnd;
+      const eStart = new Date(ev.start.dateTime || ev.start.date);
+      const eEnd   = new Date(ev.end.dateTime || ev.end.date);
+      return eStart < endDT.toJSDate() && startDT.toJSDate() < eEnd;
     });
 
     if (solapados.length > 0) {
@@ -54,12 +55,12 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
         summary: `Cita con ${name}`,
         description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
         start: {
-          dateTime: start.toISOString(),
-          timeZone: config.timezone || 'America/Santo_Domingo'
+          dateTime: startDT.toISO({ suppressMilliseconds: true }),
+          timeZone: timezone
         },
         end: {
-          dateTime: end.toISOString(),
-          timeZone: config.timezone || 'America/Santo_Domingo'
+          dateTime: endDT.toISO({ suppressMilliseconds: true }),
+          timeZone: timezone
         },
         attendees: [{ email }],
         reminders: {
@@ -74,9 +75,6 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
     console.error('❌ Error al crear cita:', err);
     res.status(500).json({ error: 'No se pudo crear la cita' });
   }
-  
-  const start = new Date(`${startISO}:00-04:00`);  // fuerza offset
-
 });
 
 export default router;
