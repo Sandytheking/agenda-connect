@@ -18,31 +18,24 @@ const transporter = nodemailer.createTransport({
  * @param {string} options.slug - Identificador del negocio
  * @param {string} options.nombre - Nombre del negocio
  */
-export async function sendReconnectEmail({ to, slug, nombre }) {
-  const url = `https://agenda-connect.onrender.com/api/oauth/start?slug=${slug}`;
+export async function sendReconnectEmail({ to, nombre, slug }) {
+  try {
+    await transporter.sendMail({
+      from: `"Agenda Connect" <${process.env.SMTP_USER}>`,
+      to,
+      subject: '⚠️ Conexión con Google Calendar expirada',
+      html: `
+        <p>Hola <strong>${nombre}</strong>,</p>
+        <p>Tu integración con Google Calendar ha expirado.</p>
+        <p>Por favor, haz clic en el siguiente botón para volver a conectar tu cuenta:</p>
+        <p><a href="https://agenda-connect.com/oauth/start?slug=${slug}" style="display:inline-block;padding:10px 20px;background:#0066ff;color:white;text-decoration:none;border-radius:5px;">🔗 Reconectar Google Calendar</a></p>
+        <p>Gracias,<br/>Agenda Connect</p>
+      `
+    });
 
-  const html = `
-    <p>Hola <strong>${nombre}</strong>,</p>
-    <p>Tu conexión con Google Calendar ha caducado o fue revocada.</p>
-    <p>Haz clic en el siguiente botón para reconectarla:</p>
-    <p>
-      <a href="${url}" style="
-        padding: 10px 20px;
-        background-color: #4CAF50;
-        color: white;
-        text-decoration: none;
-        border-radius: 5px;
-        display: inline-block;">
-        Reconectar Google Calendar
-      </a>
-    </p>
-    <p>Gracias por usar Agenda Connect.</p>
-  `;
-
-  await transporter.sendMail({
-    from: `"Agenda Connect" <${process.env.SMTP_USER}>`,
-    to,
-    subject: 'Reconecta tu cuenta de Google Calendar',
-    html
-  });
+    console.log(`📧 Correo de reconexión enviado a ${to}`);
+  } catch (err) {
+    console.error("❌ Error real al enviar el correo:", err.message || err);
+    throw new Error("Error al enviar el correo");
+  }
 }
