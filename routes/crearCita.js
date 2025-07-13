@@ -24,7 +24,7 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
 
     const timezone = config.timezone || 'America/Santo_Domingo';
 
-    const accessToken = await getAccessToken(config.refresh_token);
+    const accessToken = await getAccessToken(config.refresh_token, slug);
 
     // ✅ Usa luxon para construir hora con zona
     const startDT = getDateTimeFromStrings(date, time, timezone);
