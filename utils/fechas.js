@@ -9,16 +9,29 @@ import { DateTime } from 'luxon';
  * @returns {DateTime}
  */
 export function getDateTimeFromStrings(date, time, timezone = 'UTC') {
+  console.log('🧩 Datos recibidos para crear fecha:', { date, time, timezone });
+
   if (!date || !time) {
+    console.error('❌ Faltan parámetros de fecha u hora');
     throw new Error('Faltan parámetros de fecha u hora');
   }
 
-  const [hour, minute] = time.split(':').map(Number);
+  const [hourStr, minuteStr] = time.split(':');
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+
+  if (isNaN(hour) || isNaN(minute)) {
+    console.error('❌ Hora o minuto no numérico:', { hourStr, minuteStr });
+    throw new Error('Hora no válida');
+  }
+
   const dt = DateTime.fromISO(date, { zone: timezone }).set({ hour, minute });
 
   if (!dt.isValid) {
+    console.error('❌ DateTime inválido:', dt.invalidExplanation || dt.invalidReason);
     throw new Error('Fecha/hora inválida');
   }
 
+  console.log('✅ DateTime generado:', dt.toISO());
   return dt;
 }
