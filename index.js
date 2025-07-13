@@ -48,7 +48,7 @@ app.use(express.json());
 // Montar rutas
 app.use(express.static('public'));   // ← ya sirve archivos estáticos
 app.use('/', disponibilidadRoutes);
-app.use('/', crearCitaRoutes);  // ← asegúrate de tener esta línea
+app.use('/api/citas', crearCitaRoutes);
 app.use('/', configRoutes);
 app.use('/', authRoutes);
 app.use('/', registroRoutes);
