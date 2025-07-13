@@ -8,7 +8,8 @@ import { sendReconnectEmail } from '../utils/sendReconnectEmail.js'; // Asegúra
 
 const router = express.Router();
 
-router.post('/:slug', async (req, res) => {
+router.post('/:slug/crear-cita', async (req, res) => { ... });
+
   const slug = req.params.slug;
   const { name, email, phone, date, time } = req.body;
 
