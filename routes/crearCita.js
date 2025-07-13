@@ -3,13 +3,12 @@ import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
 import { google } from 'googleapis';
-import { verifyAuth } from '../middleware/verifyAuth.js';
 import { getDateTimeFromStrings } from '../utils/fechas.js';
-import { sendReconnectEmail } from '../utils/sendReconnectEmail.js'; // Ajusta path si es necesario
+import { sendReconnectEmail } from '../utils/sendReconnectEmail.js'; // Asegúrate que el path sea correcto
 
 const router = express.Router();
 
-router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
+router.post('/:slug/crear-cita', async (req, res) => {
   const slug = req.params.slug;
   const { name, email, phone, date, time } = req.body;
 
@@ -23,9 +22,9 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
       return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
-    // Si no hay refresh_token, validar si calendar_email existe
+    // ⚠️ Si no hay refresh_token, dispara el correo de reconexión
     if (!config.refresh_token) {
-      console.warn(`⚠️ No hay refresh_token para ${slug}.`);
+      console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);
       if (config.calendar_email) {
         try {
           await sendReconnectEmail({ 
@@ -34,29 +33,22 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
             slug 
           });
           console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
-          return res.status(401).json({ error: 'Token no encontrado, correo de reconexión enviado' });
         } catch (mailErr) {
           console.error("❌ Error al enviar correo de reconexión:", mailErr);
-          return res.status(500).json({ error: 'Error al enviar correo de reconexión' });
         }
-      } else {
-        // No hay email para enviar correo, mensaje claro
-        console.error(`❌ No se pudo enviar correo: falta calendar_email para ${slug}`);
-        return res.status(400).json({ 
-          error: 'No hay correo registrado para reconectar Google Calendar. Por favor conecta la cuenta manualmente.' 
-        });
       }
+      return res.status(401).json({ error: 'Cuenta de Google no conectada. Se ha enviado un correo para reconectar.' });
     }
 
     const timezone = config.timezone || 'America/Santo_Domingo';
 
     const accessToken = await getAccessToken(config.refresh_token, slug);
 
-    // Construir fechas con Luxon
+    // Construir fechas con zona horaria usando Luxon
     const startDT = getDateTimeFromStrings(date, time, timezone);
     const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
 
-    // Obtener eventos para el día
+    // Verificar solapamiento
     const eventos = await getEventsForDay(accessToken, date);
 
     const solapados = eventos.filter(ev => {
@@ -69,6 +61,7 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
       return res.status(409).json({ error: 'Ya hay una cita en ese horario' });
     }
 
+    // Crear evento en Google Calendar
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET
