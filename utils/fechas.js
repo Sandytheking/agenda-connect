@@ -12,9 +12,10 @@ export function getDateTimeFromStrings(date, time, timezone = 'UTC') {
   console.log('🧩 Datos recibidos para crear fecha:', { date, time, timezone });
 
   if (!date || !time) {
-    console.error('❌ Faltan parámetros de fecha u hora');
     throw new Error('Faltan parámetros de fecha u hora');
   }
+
+  const cleanTimezone = timezone.replace(/^['"]|['"]$/g, ''); // 🧽 limpia comillas
 
   const [hourStr, minuteStr] = time.split(':');
   const hour = Number(hourStr);
@@ -25,7 +26,7 @@ export function getDateTimeFromStrings(date, time, timezone = 'UTC') {
     throw new Error('Hora no válida');
   }
 
-  const dt = DateTime.fromISO(date, { zone: timezone }).set({ hour, minute });
+  const dt = DateTime.fromISO(date, { zone: cleanTimezone }).set({ hour, minute });
 
   if (!dt.isValid) {
     console.error('❌ DateTime inválido:', dt.invalidExplanation || dt.invalidReason);
