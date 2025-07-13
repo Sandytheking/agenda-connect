@@ -14,7 +14,7 @@ router.get('/api/oauth/start', (req, res) => {
   const scope = [
     'https://www.googleapis.com/auth/calendar',
     'https://www.googleapis.com/auth/calendar.events',
-    'email', 
+    'email',
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile'
   ].join(' ');
@@ -24,12 +24,24 @@ router.get('/api/oauth/start', (req, res) => {
   res.redirect(url);
 });
 
-// 👉 2. Google redirige aquí con el code
+// 👉 2. Callback después del login
 router.get('/api/oauth/callback', async (req, res) => {
   const { code, state: slug } = req.query;
   const redirect_uri = 'https://agenda-connect.onrender.com/api/oauth/callback';
 
   try {
+    // 🧪 Validar que el slug existe
+    const { data: existingClient, error: clientError } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (clientError || !existingClient) {
+      return res.status(400).send("❌ Cliente no encontrado.");
+    }
+
+    // 🛫 Solicitar tokens a Google
     const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -43,27 +55,38 @@ router.get('/api/oauth/callback', async (req, res) => {
     });
 
     const data = await response.json();
+
+    if (data.error) {
+      console.error("❌ Error en token exchange:", data);
+      return res.status(400).send("Error al intercambiar código por token.");
+    }
+
     const refreshToken = data.refresh_token;
-    const accessToken  = data.access_token;
+    const accessToken = data.access_token;
 
-    // Obtener email del usuario
-    console.log("🔑 accessToken:", accessToken);
+    // 📩 Obtener email del usuario autenticado
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-     headers: { Authorization: `Bearer ${accessToken}` }
+      headers: { Authorization: `Bearer ${accessToken}` }
     });
-
     const userInfo = await userInfoRes.json();
-    console.log("👤 userInfo:", userInfo);
     const email = userInfo.email;
 
+    // 🧠 Construir objeto de actualización
+    const updateData = { calendar_email: email };
+    if (refreshToken) {
+      updateData.refresh_token = refreshToken;
+    }
 
-    // Guardar refresh_token en Supabase
-    const { error } = await supabase
+    // 💾 Guardar en Supabase
+    const { error: updateError } = await supabase
       .from('clients')
-      .update({ refresh_token: refreshToken, calendar_email: email })
+      .update(updateData)
       .eq('slug', slug);
 
-    if (error) throw error;
+    if (updateError) {
+      console.error("❌ Error actualizando Supabase:", updateError);
+      return res.status(500).send("Error al guardar los tokens.");
+    }
 
     res.send("✅ ¡Cuenta conectada correctamente! Puedes cerrar esta ventana.");
   } catch (err) {
