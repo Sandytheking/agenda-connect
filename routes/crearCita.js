@@ -23,6 +23,7 @@ router.post('/:slug', async (req, res) => {
     }
 
     // ⚠️ Si no hay refresh_token, dispara el correo de reconexión
+    console.log('🔍 config.refresh_token:', config.refresh_token);
     if (!config.refresh_token || config.refresh_token.trim() === '') {
 
       console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);

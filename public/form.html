@@ -196,8 +196,7 @@ $('#btn').onclick = async () => {
   }
   $('#btn').disabled = true;
   $('#msg').textContent = 'Enviando…';
-  const res = await fetch(`${api}/api/citas/${slug}/crear-cita`, {
-    method: 'POST',
+  const res = await fetch(`${api}/api/citas/${slug}`, {  
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email, phone, date, time })
   });
