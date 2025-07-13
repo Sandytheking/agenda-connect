@@ -117,7 +117,7 @@
 
 <script>
 const $ = s => document.querySelector(s);
-const api = 'https://agenda-connect.onrender.com';
+const api = 'https://agenda-connect.com';
 const params = new URLSearchParams(location.search);
 const slug = params.get('slug');
 if (!slug) { $('#msg').textContent = '❌ Falta slug'; $('#btn').disabled = true; }
