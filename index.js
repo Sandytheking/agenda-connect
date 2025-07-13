@@ -17,6 +17,7 @@ import path from 'path';
 import citasRoutes from './routes/citas.js';
 import publicConfigRoutes from './routes/publicConfig.js';
 import testEmailRoute from './routes/testEmail.js';
+import debugReconnect from './routes/debugReconnect.js';
 
 
 // Cargar variables de entorno
@@ -56,6 +57,7 @@ app.use('/', slugRoutes);
 app.use('/', citasRoutes);
 app.use('/', publicConfigRoutes);
 app.use(testEmailRoute);
+app.use(debugReconnect);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
