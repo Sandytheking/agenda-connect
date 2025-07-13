@@ -13,6 +13,11 @@ const supabase = createClient(
 
 router.get('/api/debug/reconnect-test/:slug', async (req, res) => {
   const { slug } = req.params;
+  const { token } = req.query;
+
+  if (token !== process.env.DEBUG_SECRET) {
+    return res.status(403).json({ success: false, error: 'No autorizado' });
+  }
 
   try {
     const { data, error } = await supabase

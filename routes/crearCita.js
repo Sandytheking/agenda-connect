@@ -23,9 +23,9 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
       return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
-    // Si no hay refresh_token, enviar correo de reconexión
+    // Si no hay refresh_token, validar si calendar_email existe
     if (!config.refresh_token) {
-      console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);
+      console.warn(`⚠️ No hay refresh_token para ${slug}.`);
       if (config.calendar_email) {
         try {
           await sendReconnectEmail({ 
@@ -34,11 +34,18 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
             slug 
           });
           console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
+          return res.status(401).json({ error: 'Token no encontrado, correo de reconexión enviado' });
         } catch (mailErr) {
           console.error("❌ Error al enviar correo de reconexión:", mailErr);
+          return res.status(500).json({ error: 'Error al enviar correo de reconexión' });
         }
+      } else {
+        // No hay email para enviar correo, mensaje claro
+        console.error(`❌ No se pudo enviar correo: falta calendar_email para ${slug}`);
+        return res.status(400).json({ 
+          error: 'No hay correo registrado para reconectar Google Calendar. Por favor conecta la cuenta manualmente.' 
+        });
       }
-      return res.status(401).json({ error: 'Token no encontrado, debe reconectar Google Calendar' });
     }
 
     const timezone = config.timezone || 'America/Santo_Domingo';
