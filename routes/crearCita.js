@@ -40,23 +40,29 @@ router.post('/:slug/crear-cita', async (req, res) => {
       return res.status(401).json({ error: 'Cuenta de Google no conectada. Se ha enviado un correo para reconectar.' });
     }
 
-    const timezone = config.timezone || 'America/Santo_Domingo';
-    const accessToken = await getAccessToken(config.refresh_token, slug);
+   // ✅ Asegura que timezone esté limpio sin comillas extras
+const timezone = (config.timezone || 'America/Santo_Domingo').replace(/^['"]|['"]$/g, '');
 
-    const startDT = getDateTimeFromStrings(date, time, timezone);
-    const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
+// 🔑 Obtener token de acceso válido desde el refresh_token
+const accessToken = await getAccessToken(config.refresh_token, slug);
 
-    const eventos = await getEventsForDay(accessToken, date);
+// 🕒 Construir fecha y hora con zona horaria limpia
+const startDT = getDateTimeFromStrings(date, time, timezone);
+const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
 
-    const solapados = eventos.filter(ev => {
-      const eStart = new Date(ev.start.dateTime || ev.start.date);
-      const eEnd   = new Date(ev.end.dateTime || ev.end.date);
-      return eStart < endDT.toJSDate() && startDT.toJSDate() < eEnd;
-    });
+// 📆 Obtener eventos del día desde Google Calendar
+const eventos = await getEventsForDay(accessToken, date);
 
-    if (solapados.length > 0) {
-      return res.status(409).json({ error: 'Ya hay una cita en ese horario' });
-    }
+// 🔁 Validar si hay conflictos en el horario
+const solapados = eventos.filter(ev => {
+  const eStart = new Date(ev.start.dateTime || ev.start.date);
+  const eEnd   = new Date(ev.end.dateTime || ev.end.date);
+  return eStart < endDT.toJSDate() && startDT.toJSDate() < eEnd;
+});
+
+if (solapados.length > 0) {
+  return res.status(409).json({ error: 'Ya hay una cita en ese horario' });
+}
 
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
