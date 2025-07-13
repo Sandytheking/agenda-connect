@@ -5,6 +5,7 @@ import { getAccessToken, getEventsForDay } from '../utils/google.js';
 import { google } from 'googleapis';
 import { verifyAuth } from '../middleware/verifyAuth.js';
 import { getDateTimeFromStrings } from '../utils/fechas.js';
+import { sendReconnectEmail } from '../utils/sendReconnectEmail.js'; // Ajusta path si es necesario
 
 const router = express.Router();
 
@@ -18,19 +19,37 @@ router.post('/:slug/crear-cita', verifyAuth, async (req, res) => {
 
   try {
     const config = await getConfigBySlug(slug);
-    if (!config || !config.refresh_token) {
-      return res.status(404).json({ error: 'Negocio no encontrado o sin token' });
+    if (!config) {
+      return res.status(404).json({ error: 'Negocio no encontrado' });
+    }
+
+    // Si no hay refresh_token, enviar correo de reconexión
+    if (!config.refresh_token) {
+      console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);
+      if (config.calendar_email) {
+        try {
+          await sendReconnectEmail({ 
+            to: config.calendar_email, 
+            nombre: config.nombre || slug, 
+            slug 
+          });
+          console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
+        } catch (mailErr) {
+          console.error("❌ Error al enviar correo de reconexión:", mailErr);
+        }
+      }
+      return res.status(401).json({ error: 'Token no encontrado, debe reconectar Google Calendar' });
     }
 
     const timezone = config.timezone || 'America/Santo_Domingo';
 
     const accessToken = await getAccessToken(config.refresh_token, slug);
 
-    // ✅ Usa luxon para construir hora con zona
+    // Construir fechas con Luxon
     const startDT = getDateTimeFromStrings(date, time, timezone);
     const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
 
-    // 🔁 Obtener eventos del día
+    // Obtener eventos para el día
     const eventos = await getEventsForDay(accessToken, date);
 
     const solapados = eventos.filter(ev => {
