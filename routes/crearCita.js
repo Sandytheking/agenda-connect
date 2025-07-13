@@ -23,7 +23,8 @@ router.post('/:slug/crear-cita', async (req, res) => {
     }
 
     // ⚠️ Si no hay refresh_token, dispara el correo de reconexión
-    if (!config.refresh_token) {
+    if (!config.refresh_token || config.refresh_token.trim() === '') {
+
       console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);
       if (config.calendar_email) {
         try {
