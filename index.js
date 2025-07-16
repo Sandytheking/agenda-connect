@@ -41,7 +41,20 @@ const SCOPES = [
 
 // Inicializar servidor
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: [
+    'https://agenda-connect.com',
+    'agenda-connect.onrender.com',
+    'https://www.agenda-connect.com',
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+
 app.use(express.json());
 
 
