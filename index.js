@@ -44,6 +44,7 @@ const app = express();
 
 app.use(cors({
   origin: [
+    'api.agenda-connect.com',
     'https://agenda-connect.com',
     'agenda-connect.onrender.com',
     'https://www.agenda-connect.com',
