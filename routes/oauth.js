@@ -8,7 +8,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 // 👉 1. Redirige al flujo de autorización
 router.get('/api/oauth/start', (req, res) => {
   const { slug } = req.query;
-  const redirect_uri = 'api.agenda-connect.com/api/oauth/callback';
+  const redirect_uri = 'https://api.agenda-connect.com/api/oauth/callback';
   const client_id = process.env.GOOGLE_CLIENT_ID;
 
   const scope = [
@@ -27,7 +27,7 @@ router.get('/api/oauth/start', (req, res) => {
 // 👉 2. Callback después del login
 router.get('/api/oauth/callback', async (req, res) => {
   const { code, state: slug } = req.query;
-  const redirect_uri = 'api.agenda-connect.com/api/oauth/callback';
+  const redirect_uri = 'https://api.agenda-connect.com/api/oauth/callback';
 
   try {
     // 🧪 Validar que el slug existe
