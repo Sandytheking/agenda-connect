@@ -1,6 +1,8 @@
 // 📁 routes/registro.js
 import express           from 'express';
 import { createClient }  from '@supabase/supabase-js';
+import { sendWelcomeEmail } from '../emails/sendWelcomeEmail.js';
+
 
 const router = express.Router();
 
@@ -75,6 +77,13 @@ router.post('/api/registro', async (req, res) => {
         .status(500)
         .json({ error: 'Usuario creado pero error al guardar configuración' });
     }
+
+// ✉️ Enviar correo de bienvenida
+await sendWelcomeEmail({
+  to: email,
+  name: nombre,
+  slug
+});
 
     /* 3.  Todo OK ------------------------------------------------------- */
     res.json({ success: true });
