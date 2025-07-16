@@ -1,7 +1,7 @@
 // 📁 routes/registro.js
 import express           from 'express';
 import { createClient }  from '@supabase/supabase-js';
-import { sendWelcomeEmail } from '../emails/sendWelcomeEmail.js';
+import { sendWelcomeEmail } from '../utils/sendWelcomeEmail.js';
 
 
 const router = express.Router();
