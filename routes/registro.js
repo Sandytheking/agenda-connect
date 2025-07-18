@@ -68,7 +68,7 @@ router.post('/api/registro', async (req, res) => {
       duration_minutes : 30,
       start_hour       : 8,
       end_hour         : 17,
-      work_days        : [1,2,3,4,5]   // lunes‑viernes por defecto
+      work_days        : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] // lunes‑viernes por defecto
     });
 
     if (insertError) {
