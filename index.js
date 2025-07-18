@@ -46,6 +46,7 @@ app.use(cors({
   origin: [
     'https://api.agenda-connect.com',
     'https://agenda-connect.com',
+    'https://www.agenda-connect.com',
     'agenda-connect.onrender.com',
     'https://www.agenda-connect.com',
     'http://localhost:3000'
