@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary: #0063f7;
-      --bg: #f8fafc;
+      --bg: #000000;
       --text: #1a1a1a;
       --radius: 16px;
     }
@@ -35,13 +35,16 @@
       width: 100%;
     }
 
-    h2 {
+    h2#negocio {
       margin-top: 0;
       margin-bottom: 1.5rem;
-      font-weight: 600;
-      font-size: 1.5rem;
-      color: var(--text);
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #003366;
       text-align: center;
+      text-transform: capitalize;
+      letter-spacing: 0.5px;
     }
 
     label {
@@ -112,6 +115,12 @@
 
     <button id="btn">Reservar</button>
     <div id="msg"></div>
+     <p style="margin-top: 2rem; font-size: 0.9rem; text-align: center; color: #777;">
+      Este sistema de reservas es impulsado por<br>
+      <a href="https://www.agenda-connect.com" target="_blank" style="color: #0063f7; font-weight: bold; text-decoration: none;">
+        Agenda Connect
+      </a>
+    </p>
   </div>
 
   <script>
@@ -132,7 +141,6 @@
         const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
         $('#date').min = hoy.toISOString().split('T')[0];
 
-        // ✅ Convertimos días como "Monday" en números 1, 2, ..., 6
         const diasLaborables = (cfg.work_days || []).map(d => ({
           Sunday: 0,
           Monday: 1,
@@ -147,7 +155,7 @@
           if (!e.target.value) return;
           const [y, m, d] = e.target.value.split('-').map(Number);
           const fecha = new Date(y, m - 1, d, 12);
-          const dia = fecha.getDay(); // número del 0 (domingo) al 6 (sábado)
+          const dia = fecha.getDay();
           if (!diasLaborables.includes(dia)) {
             $('#msg').textContent = '⛔ El negocio no abre ese día';
             $('#time').innerHTML = '<option></option>';
