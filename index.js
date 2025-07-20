@@ -18,8 +18,8 @@ import citasRoutes from './routes/citas.js';
 import publicConfigRoutes from './routes/publicConfig.js';
 import testEmailRoute from './routes/testEmail.js';
 import debugReconnect from './routes/debugReconnect.js';
-const adminRoutes = require('./routes/admin');
-const clientesRoutes = require('./routes/clientes');
+import adminRoutes from './routes/admin.js';
+import clientesRoutes from'./routes/clientes';
 
 
 // Cargar variables de entorno
@@ -76,7 +76,7 @@ app.use('/', publicConfigRoutes);
 app.use(testEmailRoute);
 app.use(debugReconnect);
 app.use('/api', adminRoutes);
-app.use('/api/clients', clientesRoutes);
+app.use('/api/clientes', clientesRoutes);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
