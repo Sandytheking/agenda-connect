@@ -2,12 +2,18 @@
 import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
+import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.js';
 
 const router = express.Router();
 /* ---------- POST /:slug/disponibilidad (protegida) ---------- */
 router.post('/:slug/disponibilidad', async (req, res) => {
+   const { slug }       = req.params;
+
+   // 👇 verificar suscripción antes de continuar
+  const { valido, mensaje } = await verificarSuscripcionActiva(slug);
+  if (!valido) return res.status(403).json({ error: mensaje });
+
   try {
-    const { slug }       = req.params;
     const { date, time } = req.body;               // YYYY‑MM‑DD  / HH:mm
     if (!slug || !date || !time) {
       return res.status(400).json({ available:false, message:'Faltan parámetros' });

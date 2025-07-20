@@ -5,11 +5,17 @@ import { getAccessToken, getEventsForDay } from '../utils/google.js';
 import { google } from 'googleapis';
 import { getDateTimeFromStrings } from '../utils/fechas.js';
 import { sendReconnectEmail } from '../utils/sendReconnectEmail.js'; // Asegúrate que el path sea correcto
+import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.js'; 
 
 const router = express.Router();
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const slug = req.params.slug;
+  
+   // 👇 verificar suscripción antes de continuar
+  const { valido, mensaje } = await verificarSuscripcionActiva(slug);
+  if (!valido) return res.status(403).json({ error: mensaje });
+
   const { name, email, phone, date, time } = req.body;
 
   if (!name || !email || !date || !time) {
