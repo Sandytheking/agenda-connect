@@ -22,7 +22,7 @@ export async function sendReconnectEmail({ to, nombre, slug }) {
     }
   });
 
-  const reconnectUrl = `https://agenda-connect.com/api/oauth/start?slug=${slug}`;
+  const reconnectUrl = `https://api.agenda-connect.com/api/oauth/start?slug=${slug}`;
 
   const mailOptions = {
     from: `"Agenda Connect" <${process.env.SMTP_USER}>`,
