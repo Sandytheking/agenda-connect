@@ -20,6 +20,7 @@ import testEmailRoute from './routes/testEmail.js';
 import debugReconnect from './routes/debugReconnect.js';
 import adminRoutes from './routes/admin.js';
 import clientesRoutes from'./routes/clientes.js';
+import superadminRoutes from './routes/superadmin.js';
 
 
 // Cargar variables de entorno
@@ -77,6 +78,7 @@ app.use(testEmailRoute);
 app.use(debugReconnect);
 app.use('/api/admin', adminRoutes);
 app.use('/api/clientes', clientesRoutes);
+app.use('/api', superadminRoutes);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {

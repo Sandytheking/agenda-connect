@@ -1,13 +1,12 @@
-
-
 // routes/clientes.js
 import express from 'express';
-import { supabase } from '../supabaseClient.js'; // Asegúrate que este archivo también use "export"
+import { verificarJWT } from '../middleware/verificarJWT.js';
+import { supabase } from '../supabaseClient.js'; // Asegúrate que este archivo exporte bien
 
 const router = express.Router();
 
-// ✅ GET /api/clientes – Obtener todos los clientes
-router.get('/', async (req, res) => {
+// ✅ GET /api/clientes – Obtener todos los clientes (🔒 protegido)
+router.get('/', verificarJWT, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('clients')
@@ -21,8 +20,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ✅ POST /api/clientes/:slug/renovar – Renovar suscripción manual
-router.post('/:slug/renovar', async (req, res) => {
+// ✅ POST /api/clientes/:slug/renovar – Renovar suscripción manual (🔒 protegido)
+router.post('/:slug/renovar', verificarJWT, async (req, res) => {
   try {
     const { slug } = req.params;
 
