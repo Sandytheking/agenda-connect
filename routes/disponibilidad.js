@@ -3,7 +3,7 @@ import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
 import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.js';
-import { sendReconnectEmail } from '../utils/sendReconnectEmail.js'; // 👈 Asegúrate de tener esto
+import { sendReconnectEmail } from '../utils/sendReconnectEmail.js'; // Asegúrate que el path sea correcto
 
 const router = express.Router();
 
@@ -11,9 +11,9 @@ const router = express.Router();
 router.post('/:slug/disponibilidad', async (req, res) => {
   const { slug } = req.params;
 
-  // 👇 verificar suscripción antes de continuar
+  // Validar suscripción
   const { valido, mensaje } = await verificarSuscripcionActiva(slug);
-  if (!valido) return res.status(403).json({ error: mensaje });
+  if (!valido) return res.status(403).json({ available: false, message: mensaje });
 
   try {
     const { date, time } = req.body;
@@ -26,17 +26,17 @@ router.post('/:slug/disponibilidad', async (req, res) => {
       return res.status(404).json({ available: false, message: 'Negocio no encontrado' });
     }
 
+    // 🔁 Intentar obtener token válido
     let access;
     try {
       access = await getAccessToken(cfg.refresh_token);
     } catch (err) {
-      console.warn('⛔ Token vencido o inválido, enviando email de reconexión...');
-      await sendReconnectEmail(slug, cfg.email); // 👈 dispara email
-      return res.status(200).json({ available: false, message: 'No hay disponibilidad en este momento.' });
+      console.error('⚠️ Error al obtener access token:', err.message);
+      await sendReconnectEmail(slug);
+      return res.status(401).json({ available: false, message: '⛔ Conexión a Google Calendar vencida. Se ha enviado un correo al dueño.' });
     }
 
     const events = await getEventsForDay(access, date);
-
     if (events.length >= (cfg.max_per_day ?? 5)) {
       return res.json({ available: false, message: 'Día completo' });
     }
@@ -55,13 +55,12 @@ router.post('/:slug/disponibilidad', async (req, res) => {
       return res.json({ available: false, message: 'Hora ocupada' });
     }
 
-    return res.json({ available: true });
+    res.json({ available: true });
 
   } catch (err) {
-    console.error('❌ disponibilidad POST:', err);
+    console.error('❌ Error en disponibilidad POST:', err);
     res.status(500).json({ available: false, message: 'Error interno' });
   }
 });
-
 
 export default router;
