@@ -76,7 +76,7 @@ app.use('/', publicConfigRoutes);
 app.use(testEmailRoute);
 app.use(debugReconnect);
 app.use('/api', adminRoutes);
-app.use('/api/clientes', clientesRoutes);
+app.use('/api/clients', clientesRoutes);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
