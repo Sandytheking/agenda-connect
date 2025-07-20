@@ -1,8 +1,10 @@
-//clientes.js
 
-const express = require('express');
+
+// routes/clientes.js
+import express from 'express';
+import { supabase } from '../supabaseClient.js'; // Asegúrate que este archivo también use "export"
+
 const router = express.Router();
-const { supabase } = require('../supabaseClient'); // Asegúrate de importar correctamente
 
 // ✅ GET /api/clientes – Obtener todos los clientes
 router.get('/', async (req, res) => {
@@ -57,4 +59,4 @@ router.post('/:slug/renovar', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

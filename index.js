@@ -19,7 +19,7 @@ import publicConfigRoutes from './routes/publicConfig.js';
 import testEmailRoute from './routes/testEmail.js';
 import debugReconnect from './routes/debugReconnect.js';
 import adminRoutes from './routes/admin.js';
-import clientesRoutes from'./routes/clientes';
+import clientesRoutes from'./routes/clientes.js';
 
 
 // Cargar variables de entorno
@@ -75,7 +75,7 @@ app.use('/', citasRoutes);
 app.use('/', publicConfigRoutes);
 app.use(testEmailRoute);
 app.use(debugReconnect);
-app.use('/api', adminRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/clientes', clientesRoutes);
 
 // 👉 Iniciar login con Google
