@@ -20,7 +20,7 @@ export async function verificarSuscripcionActiva(slug) {
   if (!suscripcionActiva) {
     return {
       valido: false,
-      mensaje: 'Tu suscripción ha vencido o está desactivada.',
+      mensaje: 'La suscripción de este negocio ha vencido o está desactivada. Porfavor contactar al administrador',
     };
   }
 
