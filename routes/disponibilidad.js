@@ -19,17 +19,32 @@ router.post('/:slug/disponibilidad', async (req, res) => {
       return res.status(400).json({ available:false, message:'Faltan parámetros' });
     }
 
-    const cfg = await getConfigBySlug(slug);
-    if (!cfg || !cfg.refresh_token) {
-      return res.status(404).json({ available:false, message:'Negocio no encontrado' });
-    }
+const cfg = await getConfigBySlug(slug);
+if (!cfg || !cfg.refresh_token) {
+  return res.status(404).json({ available: false, message: 'Negocio no encontrado' });
+}
 
-    const access  = await getAccessToken(cfg.refresh_token);
-    const events  = await getEventsForDay(access, date);
+let access;
+try {
+  access = await getAccessToken(cfg.refresh_token);
+} catch (err) {
+  console.error('❌ Error obteniendo token de acceso:', err);
 
-    if (events.length >= (cfg.max_per_day ?? 5)) {
-      return res.json({ available:false, message:'Día completo' });
-    }
+  if (err.code === 401 || err.response?.status === 401) {
+    console.log('📩 Intentando enviar correo de reconexión…');
+    await sendReconnectEmail({ slug: cfg.slug, email: cfg.email, nombre: cfg.nombre });
+ // asegúrate que cfg.email y cfg.slug existan
+  }
+
+  return res.status(200).json({ available: false, message: 'No hay horas disponibles' });
+}
+
+const events = await getEventsForDay(access, date); // 👈 ESTO FALTABA
+
+if (events.length >= (cfg.max_per_day ?? 5)) {
+  return res.json({ available: false, message: 'Día completo' });
+}
+
 
     // Construir el slot de forma segura
     const [hh, mm]                = time.split(':').map(Number);
