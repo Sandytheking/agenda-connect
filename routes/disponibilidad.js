@@ -28,7 +28,9 @@ if (!cfg || !cfg.refresh_token) {
 
 let access;
 try {
-  access = await getAccessToken(cfg.refresh_token);
+
+  access = await getAccessToken(cfg.refresh_token, cfg.slug);
+  
 } catch (err) {
   console.error('❌ Error obteniendo token de acceso:', err);
 
@@ -41,7 +43,7 @@ try {
   return res.status(200).json({ available: false, message: 'No hay horas disponibles' });
 }
 
-const events = await getEventsForDay(access, date); // 👈 ESTO FALTABA
+const events = await getEventsForDay(access, date);
 
 if (events.length >= (cfg.max_per_day ?? 5)) {
   return res.json({ available: false, message: 'Día completo' });
