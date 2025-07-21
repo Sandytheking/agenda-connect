@@ -3,6 +3,8 @@ import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
 import { getAccessToken, getEventsForDay } from '../utils/google.js';
 import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.js';
+import { sendReconnectEmail } from '../utils/sendReconnectEmail.js';
+
 
 const router = express.Router();
 /* ---------- POST /:slug/disponibilidad (protegida) ---------- */
