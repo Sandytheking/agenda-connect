@@ -188,34 +188,20 @@
       return lista;
     }
 
-   async function cargarHorasDisponibles(fechaISO) {
-  $('#time').innerHTML = '<option>Cargando…</option>';
-  $('#time').disabled = true;
-  const libres = [];
-
-  for (const h of generarSlots()) {
-    try {
-      const res = await fetch(`${api}/api/${slug}/disponibilidad`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ date: fechaISO, time: h })
-      });
-
-      const data = await res.json();
-      if (data.available) libres.push(h);
-    } catch (err) {
-      console.error('Error al verificar disponibilidad:', err);
+    async function cargarHorasDisponibles(fechaISO) {
+      $('#time').innerHTML = '<option>Cargando…</option>';
+      $('#time').disabled = true;
+      const libres = [];
+      for (const h of generarSlots()) {
+        const r = await fetch(`${api}/api/availability/${slug}?date=${fechaISO}&time=${h}`);
+        const { available } = await r.json();
+        if (available) libres.push(h);
+      }
+      $('#time').innerHTML = libres.length
+        ? `<option value=""></option>${libres.map(h => `<option value="${h}">${h}</option>`).join('')}`
+        : '<option>No hay horas libres</option>';
+      $('#time').disabled = !libres.length;
     }
-  }
-
-  $('#time').innerHTML = libres.length
-    ? `<option value=""></option>${libres.map(h => `<option value="${h}">${h}</option>`).join('')}`
-    : '<option>No hay horas libres</option>';
-  $('#time').disabled = !libres.length;
-}
-
 
     $('#btn').onclick = async () => {
       const name = $('#name').value.trim();
