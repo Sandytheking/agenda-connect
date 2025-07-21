@@ -28,18 +28,10 @@ if (!cfg || !cfg.refresh_token) {
 
 let access;
 try {
-
   access = await getAccessToken(cfg.refresh_token, cfg.slug);
-  
+  console.log("📛 SLUG recibido:", slug);
 } catch (err) {
   console.error('❌ Error obteniendo token de acceso:', err);
-
-  if (err.code === 401 || err.response?.status === 401) {
-    console.log('📩 Intentando enviar correo de reconexión…');
-    await sendReconnectEmail({ slug: cfg.slug, email: cfg.email, nombre: cfg.nombre });
- // asegúrate que cfg.email y cfg.slug existan
-  }
-
   return res.status(200).json({ available: false, message: 'No hay horas disponibles' });
 }
 
