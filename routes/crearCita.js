@@ -6,8 +6,11 @@ import { google } from 'googleapis';
 import { getDateTimeFromStrings } from '../utils/fechas.js';
 import { sendReconnectEmail } from '../utils/sendReconnectEmail.js'; // Asegúrate que el path sea correcto
 import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.js'; 
+import { createClient } from '@supabase/supabase-js';
 
 const router = express.Router();
+// Inicializa el cliente Supabase con claves seguras (usa SERVICE_ROLE_KEY porque no hay usuario logueado)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const slug = req.params.slug;
@@ -97,6 +100,29 @@ if (solapados.length > 0) {
         }
       }
     });
+
+    // 🗂️ Guardar la cita también en Supabase
+try {
+  const { error } = await supabase.from('appointments').insert([{
+    slug,
+    nombre: name,
+    email,
+    telefono: phone,
+    fecha: startDT.toISODate(), // YYYY-MM-DD
+    hora: startDT.toFormat('HH:mm'), // HH:mm
+    inicio: startDT.toISO(),
+    fin: endDT.toISO()
+  }]);
+
+  if (error) {
+    console.error("❌ Error al guardar cita en Supabase:", error.message);
+  } else {
+    console.log("✅ Cita guardada en Supabase correctamente");
+  }
+} catch (err) {
+  console.error("❌ Error inesperado al guardar en Supabase:", err.message);
+}
+
 
     res.json({ success: true, eventId: evento.data.id });
 
