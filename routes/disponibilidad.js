@@ -28,10 +28,12 @@ if (!cfg || !cfg.refresh_token) {
 
 let access;
 try {
+  console.log("🧪 Llamando a getAccessToken con refresh:", cfg.refresh_token, "slug:", cfg.slug);
   access = await getAccessToken(cfg.refresh_token, cfg.slug);
   console.log("📛 SLUG recibido:", slug);
 } catch (err) {
   console.error('❌ Error obteniendo token de acceso:', err);
+  console.log('📩 Intentando enviar correo de reconexión (catch de disponibilidad)…');
   return res.status(200).json({ available: false, message: 'No hay horas disponibles' });
 }
 
