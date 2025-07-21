@@ -43,7 +43,6 @@ if (events.length >= (cfg.max_per_day ?? 5)) {
   return res.json({ available: false, message: 'Día completo' });
 }
 
-
     // Construir el slot de forma segura
     const [hh, mm]                = time.split(':').map(Number);
     const [year, month, day]      = date.split('-').map(Number);
