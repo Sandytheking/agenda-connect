@@ -88,10 +88,6 @@ app.get('/api/citas', async (req, res) => {
   }
 });
 
-// Luego monta las rutas
-app.use('/api/citas', crearCitaRoutes);
-
-
 
 // Montar rutas
 app.use(express.static('public'));   // ← ya sirve archivos estáticos
