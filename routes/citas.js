@@ -1,7 +1,8 @@
 // ✅ Ruta pública para crear citas
 import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
-import { getAccessToken, getEventsForDay, sendReconnectEmail } from '../utils/google.js';
+import { getAccessToken, getEventsForDay } from '../utils/google.js';
+import { sendReconnectEmail } from '../utils/sendReconnectEmail.js';
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
 
