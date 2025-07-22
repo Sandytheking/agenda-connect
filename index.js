@@ -199,7 +199,8 @@ app.get('/api/negocio/:slug', async (req, res) => {
       return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
-    res.json({ nombre_negocio: data.nombre_negocio });
+    res.json({ nombre_negocio: data.nombre });
+
   } catch (err) {
     console.error('❌ Error en /api/negocio/:slug', err);
     res.status(500).json({ error: 'Error interno del servidor' });
