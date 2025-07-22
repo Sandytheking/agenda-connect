@@ -158,6 +158,54 @@ app.get('/api/config/:slug', async (req, res) => {
   }
 });
 
+// 👉 Obtener nombre del negocio por slug
+app.get('/api/negocio/:slug', async (req, res) => {
+  const { slug } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('nombre_negocio')
+      .eq('slug', slug)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Negocio no encontrado' });
+    }
+
+    res.json({ nombre_negocio: data.nombre_negocio });
+  } catch (err) {
+    console.error('❌ Error en /api/negocio/:slug', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// 👉 Obtener todas las citas de un cliente por slug
+app.get('/api/citas', async (req, res) => {
+  const { slug } = req.query;
+
+  if (!slug || typeof slug !== 'string') {
+    return res.status(400).json({ error: 'Falta el parámetro slug' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('citas')
+      .select('*')
+      .eq('slug', slug)
+      .order('inicio', { ascending: true });
+
+    if (error) {
+      return res.status(500).json({ error: 'Error al obtener citas' });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error('❌ Error en /api/citas:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 
 // 👉 Iniciar servidor
 const PORT = process.env.PORT || 3000;
