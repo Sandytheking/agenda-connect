@@ -72,7 +72,7 @@ app.get('/api/citas', async (req, res) => {
 
   try {
     const { data, error } = await supabase
-      .from('citas')
+      .from('appointments')
       .select('*')
       .eq('slug', slug)
       .order('inicio', { ascending: true });
@@ -195,7 +195,7 @@ app.get('/api/negocio/:slug', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('nombre_negocio')
+      .select('nombre')
       .eq('slug', slug)
       .single();
 
