@@ -62,6 +62,36 @@ app.use(cors({
 
 app.use(express.json());
 
+// 👉 Obtener todas las citas de un cliente por slug (Mueve esto arriba)
+app.get('/api/citas', async (req, res) => {
+  const { slug } = req.query;
+
+  if (!slug || typeof slug !== 'string') {
+    return res.status(400).json({ error: 'Falta el parámetro slug' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('citas')
+      .select('*')
+      .eq('slug', slug)
+      .order('inicio', { ascending: true });
+
+    if (error) {
+      return res.status(500).json({ error: 'Error al obtener citas' });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error('❌ Error en /api/citas:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Luego monta las rutas
+app.use('/api/citas', crearCitaRoutes);
+
+
 
 // Montar rutas
 app.use(express.static('public'));   // ← ya sirve archivos estáticos
@@ -180,31 +210,6 @@ app.get('/api/negocio/:slug', async (req, res) => {
   }
 });
 
-// 👉 Obtener todas las citas de un cliente por slug
-app.get('/api/citas', async (req, res) => {
-  const { slug } = req.query;
-
-  if (!slug || typeof slug !== 'string') {
-    return res.status(400).json({ error: 'Falta el parámetro slug' });
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('citas')
-      .select('*')
-      .eq('slug', slug)
-      .order('inicio', { ascending: true });
-
-    if (error) {
-      return res.status(500).json({ error: 'Error al obtener citas' });
-    }
-
-    res.json(data);
-  } catch (err) {
-    console.error('❌ Error en /api/citas:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
 
 
 // 👉 Iniciar servidor
