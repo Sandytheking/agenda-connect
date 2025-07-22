@@ -1,3 +1,5 @@
+
+//google.js
 import { google } from 'googleapis';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
@@ -59,10 +61,12 @@ export async function getAccessToken(refresh_token, slug) {
  * Obtiene los eventos de un día específico desde Google Calendar
  * @param {string} accessToken
  * @param {string} date - formato YYYY-MM-DD
- * @returns {Array<{ start: string, end: string }>}
+ * @param {string} calendarId - ID del calendario (puede ser el email)
+ * @returns {Array<{ start: string, end: string }> }
  */
-export async function getEventsForDay(accessToken, date) {
+export async function getEventsForDay(accessToken, date, calendarId = 'primary') {
   console.log("🔐 Usando access_token:", accessToken?.slice(0, 20), "...");
+  console.log("📅 Usando calendarId:", calendarId);
 
   const oAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -84,18 +88,18 @@ export async function getEventsForDay(accessToken, date) {
 
   try {
     const res = await calendar.events.list({
-      calendarId   : 'primary',
-      timeMin      : start.toISOString(),
-      timeMax      : end.toISOString(),
-      singleEvents : true,
-      orderBy      : 'startTime'
+      calendarId, // 💡 usa calendarId personalizado o 'primary'
+      timeMin: start.toISOString(),
+      timeMax: end.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
     });
 
     console.log("✅ Eventos recibidos:", res.data.items?.length || 0);
 
     return res.data.items.map(ev => ({
       start: ev.start?.dateTime || ev.start?.date,
-      end  : ev.end?.dateTime || ev.end?.date
+      end: ev.end?.dateTime || ev.end?.date,
     }));
   } catch (error) {
     console.error("❌ Error al leer eventos:", error.response?.data || error.message);

@@ -93,7 +93,7 @@ router.post('/api/citas/:slug', async (req, res) => {
       const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
       const evento = await calendar.events.insert({
-        calendarId: 'primary',
+       calendarId: config.calendar_id || config.calendar_email || 'primary',
         requestBody: {
           summary: `Cita con ${name}`,
           description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
