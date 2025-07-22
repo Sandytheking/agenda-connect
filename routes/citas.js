@@ -114,16 +114,18 @@ router.post('/api/citas/:slug', async (req, res) => {
     }
 
     // Guardar en Supabase
-    const { error: insertError } = await supabase.from('appointments').insert({
-      slug,
-      fecha: date,
-      inicio: start.toISOString(),
-      fin: end.toISOString(),
-      nombre: name,
-      email,
-      telefono: phone,
-      evento_id: eventoGoogleId
-    });
+   const { error: insertError } = await supabase.from('appointments').insert({
+  slug,
+  fecha: date,
+  inicio: start.toISOString(),
+  fin: end.toISOString(),
+  nombre: name,
+  email,
+  telefono: phone,
+  evento_id: eventoGoogleId,
+  creado_en_google: !!eventoGoogleId  // ✅ será true si hay un ID, false si no
+});
+
 
     if (insertError) {
       console.error('⚠️ Error al guardar en Supabase:', insertError);
