@@ -1,12 +1,10 @@
-
-//✅ Ruta pública para crear citas
+// ✅ Ruta pública para crear citas
 import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
-import { getAccessToken, getEventsForDay } from '../utils/google.js';
+import { getAccessToken, getEventsForDay, sendReconnectEmail } from '../utils/google.js';
 import { google } from 'googleapis';
-import { createClient } from '@supabase/supabase-js'; // <- mover aquí
+import { createClient } from '@supabase/supabase-js';
 
-// ✅ Instanciar router y Supabase client
 const router = express.Router();
 
 const supabase = createClient(
@@ -14,7 +12,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// ✅ Ruta para crear citas
 router.post('/api/citas/:slug', async (req, res) => {
   const { slug } = req.params;
   const { name, email, phone, date, time } = req.body;
@@ -25,24 +22,53 @@ router.post('/api/citas/:slug', async (req, res) => {
 
   try {
     const config = await getConfigBySlug(slug);
-    if (!config || !config.refresh_token) {
-      return res.status(404).json({ error: 'Negocio no encontrado o no conectado a Google Calendar' });
+    if (!config) {
+      return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
     const duration = config.duration_minutes || 30;
-    const accessToken = await getAccessToken(config.refresh_token);
-
-    // Validar disponibilidad
-    const eventos = await getEventsForDay(accessToken, date);
-
-    if (eventos.length >= (config.max_per_day || 5)) {
-      return res.status(409).json({ error: 'Límite de citas alcanzado para ese día' });
-    }
 
     const [h, m] = time.split(":").map(Number);
     const start = new Date(date);
     start.setHours(h, m, 0, 0);
     const end = new Date(start.getTime() + duration * 60000);
+
+    let eventos = [];
+
+    let tokenValido = false;
+    let accessToken;
+
+    // Intentar obtener el token
+    try {
+      accessToken = await getAccessToken(config.refresh_token);
+      tokenValido = true;
+    } catch (err) {
+      console.warn('⚠️ Token vencido o inválido. Enviando correo de reconexión...');
+      await sendReconnectEmail(config);
+    }
+
+    if (tokenValido) {
+      // Obtener eventos desde Google Calendar
+      eventos = await getEventsForDay(accessToken, date);
+    } else {
+      // Si no hay token válido, revisar Supabase
+      const { data: citasDB, error } = await supabase
+        .from('appointments')
+        .select('inicio, fin')
+        .eq('slug', slug)
+        .eq('fecha', date);
+
+      if (error) throw error;
+      eventos = citasDB.map(cita => ({
+        start: cita.inicio,
+        end: cita.fin
+      }));
+    }
+
+    // Validar cantidad de citas por día
+    if (eventos.length >= (config.max_per_day || 5)) {
+      return res.status(409).json({ error: 'Límite de citas alcanzado para ese día' });
+    }
 
     const solapados = eventos.filter(ev => {
       const evStart = new Date(ev.start);
@@ -54,34 +80,39 @@ router.post('/api/citas/:slug', async (req, res) => {
       return res.status(409).json({ error: 'Hora ocupada' });
     }
 
-    // Crear evento en Google Calendar
-    const oAuth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET
-    );
-    oAuth2Client.setCredentials({ access_token: accessToken });
+    // Si el token es válido, crear el evento en Google Calendar
+    let eventoGoogleId = null;
+    if (tokenValido) {
+      const oAuth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+      );
+      oAuth2Client.setCredentials({ access_token: accessToken });
 
-    const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+      const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
 
-    const evento = await calendar.events.insert({
-      calendarId: 'primary',
-      requestBody: {
-        summary: `Cita con ${name}`,
-        description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
-        start: {
-          dateTime: start.toISOString(),
-          timeZone: 'America/Santo_Domingo'
-        },
-        end: {
-          dateTime: end.toISOString(),
-          timeZone: 'America/Santo_Domingo'
-        },
-        attendees: [{ email }],
-        reminders: { useDefault: true }
-      }
-    });
+      const evento = await calendar.events.insert({
+        calendarId: 'primary',
+        requestBody: {
+          summary: `Cita con ${name}`,
+          description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
+          start: {
+            dateTime: start.toISOString(),
+            timeZone: 'America/Santo_Domingo'
+          },
+          end: {
+            dateTime: end.toISOString(),
+            timeZone: 'America/Santo_Domingo'
+          },
+          attendees: [{ email }],
+          reminders: { useDefault: true }
+        }
+      });
 
-    // 🚀 GUARDAR EN SUPABASE
+      eventoGoogleId = evento.data.id;
+    }
+
+    // Guardar en Supabase
     const { error: insertError } = await supabase.from('appointments').insert({
       slug,
       fecha: date,
@@ -90,14 +121,14 @@ router.post('/api/citas/:slug', async (req, res) => {
       nombre: name,
       email,
       telefono: phone,
-      evento_id: evento.data.id
+      evento_id: eventoGoogleId
     });
 
     if (insertError) {
       console.error('⚠️ Error al guardar en Supabase:', insertError);
     }
 
-    res.json({ success: true, eventId: evento.data.id });
+    res.json({ success: true, eventId: eventoGoogleId });
 
   } catch (err) {
     console.error('❌ Error en creación de cita pública:', err);
