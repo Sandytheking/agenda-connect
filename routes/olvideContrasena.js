@@ -51,7 +51,7 @@ console.log('🔎 Resultado Supabase:', user, userError);
     ]);
 
     if (insertError) {
-      console.error('❌ Error al insertar token:', insertError);
+      console.error('❌ Error al insertar token:', JSON.stringify(insertError, null, 2));
       return res.status(500).json({ error: 'No se pudo generar token' });
     }
 
