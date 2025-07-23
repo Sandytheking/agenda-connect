@@ -103,16 +103,23 @@ if (solapados.length > 0) {
 
     // 🗂️ Guardar la cita también en Supabase
 try {
-  const { error } = await supabase.from('appointments').insert([{
-    slug,
-    nombre: name,
-    email,
-    telefono: phone,
-    fecha: startDT.toISODate(), // YYYY-MM-DD
-    hora: startDT.toFormat('HH:mm'), // HH:mm
-    inicio: startDT.toISO(),
-    fin: endDT.toISO()
-  }]);
+
+const eventoGoogleId = evento?.data?.id || null;
+
+const { error } = await supabase.from('appointments').insert([{
+  slug,
+  nombre: name,
+  email,
+  telefono: phone,
+  fecha: startDT.toISODate(),
+  hora: startDT.toFormat('HH:mm'),
+  inicio: startDT.toISO(),
+  fin: endDT.toISO(),
+  evento_id: eventoGoogleId,
+  creado_en_google: !!eventoGoogleId
+  
+}]);
+
 
   if (error) {
     console.error("❌ Error al guardar cita en Supabase:", error.message);
