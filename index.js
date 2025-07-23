@@ -107,7 +107,7 @@ app.use(debugReconnect);
 app.use('/api/admin', adminRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api', superadminRoutes);
-app.use(restablecerContrasena);
+app.use('/api/restablecer-contrasena', restablecerContrasena);
 app.use(validarResetRoute);
 
 // 👉 Iniciar login con Google
