@@ -19,7 +19,7 @@ router.post('/api/restablecer-contrasena', async (req, res) => {
     // 1. Buscar el token en la tabla password_reset_tokens
     const { data: tokenRow, error: tokenError } = await supabase
       .from('password_reset')
-      .select('id, user_id, expires_at')
+      .select('expires_at')
       .eq('token', token)
       .single();
 
@@ -42,7 +42,7 @@ router.post('/api/restablecer-contrasena', async (req, res) => {
     const { error: updateError } = await supabase
       .from('clients')
       .update({ password: hashedPassword })
-      .eq('id', tokenRow.user_id);
+      .eq('nombre', tokenRow.nombre);
 
     if (updateError) {
       console.error('❌ Error al actualizar contraseña:', updateError.message);
@@ -50,7 +50,7 @@ router.post('/api/restablecer-contrasena', async (req, res) => {
     }
 
     // 5. Eliminar el token usado
-    await supabase.from('password_reset').delete().eq('id', tokenRow.id);
+    await supabase.from('password_reset').delete().eq('nombre', tokenRow.nombre);
 
     res.json({ success: true, message: 'Contraseña actualizada correctamente' });
   } catch (err) {
