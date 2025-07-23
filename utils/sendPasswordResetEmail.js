@@ -4,7 +4,8 @@
 import nodemailer from 'nodemailer';
 
 export async function sendPasswordResetEmail(to, token) {
-  const resetUrl = `https://www.agenda-connect.com/resetear-password/${token}`; // Cambia la URL
+  const resetUrl = `https://www.agenda-connect.com/restablecer-password/${token}`;
+
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
