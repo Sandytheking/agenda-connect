@@ -23,6 +23,7 @@ import clientesRoutes from'./routes/clientes.js';
 import superadminRoutes from './routes/superadmin.js';
 import restablecerContrasena from './routes/restablecerContrasena.js';
 import validarResetRoute from './routes/validarReset.js';
+import olvideContrasenaRoute from './routes/olvideContrasena.js';
 
 
 // Cargar variables de entorno
@@ -109,6 +110,7 @@ app.use('/api/clientes', clientesRoutes);
 app.use('/api', superadminRoutes);
 app.use('/api/restablecer-contrasena', restablecerContrasena);
 app.use(validarResetRoute);
+app.use('/api/olvide-contrasena', olvideContrasenaRoute);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
