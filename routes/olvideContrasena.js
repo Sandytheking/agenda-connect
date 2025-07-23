@@ -45,6 +45,7 @@ console.log('🔎 Resultado Supabase:', user, userError);
     const { error: insertError } = await supabase.from('password_reset').insert([
       {
         token,
+        user_id: user.id,
         expires_at: expiresAt.toISOString(),
       },
     ]);
