@@ -24,10 +24,11 @@ router.post('/', async (req, res) => {
 
   try {
     const { data: user, error: userError } = await supabase
-      .from('clients')
-      .select('nombre')
-      .ilike('email', email)
-      .single();
+  .from('clients')
+  .select('id, email, nombre') // asegúrate de incluir `email`
+  .eq('email', email)
+  .single();
+
 
 console.log('🔎 Resultado Supabase:', user, userError);
 
@@ -42,13 +43,15 @@ console.log('🔎 Resultado Supabase:', user, userError);
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
 
-    const { error: insertError } = await supabase.from('password_reset').insert([
-      {
-        token,
-        user_id: user.id,
-        expires_at: expiresAt.toISOString(),
-      },
-    ]);
+    const { error: insertError } = await supabase
+  .from('password_resets') 
+  .insert([
+    {
+      token,
+      email: user.email, 
+      expires_at: expiresAt.toISOString(),
+    },
+  ]);
 
     if (insertError) {
       console.error('❌ Error al insertar token:', JSON.stringify(insertError, null, 2));
