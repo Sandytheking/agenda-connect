@@ -3,7 +3,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import { sendPasswordResetEmail } from '../utils/sendPasswordResetEmail.js'; // ajusta la ruta según tu estructura
+import { sendPasswordResetEmail } from '../utils/sendPasswordResetEmail.js';
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -12,8 +12,11 @@ router.post('/', async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
+    console.log('❌ Email no proporcionado en el body');
     return res.status(400).json({ error: 'Email es requerido' });
   }
+
+  console.log('📩 Solicitud de reset recibida para:', email);
 
   try {
     const { data: user, error: userError } = await supabase
@@ -22,15 +25,17 @@ router.post('/', async (req, res) => {
       .eq('email', email)
       .single();
 
-    // Aunque no exista el email, respondemos igual para evitar revelar usuarios
     if (userError || !user) {
+      console.log('⚠️ No se encontró el usuario:', email);
       return res.status(200).json({ message: 'Correo enviado si existe' });
     }
+
+    console.log('✅ Usuario encontrado:', user.name);
 
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
 
-    await supabase.from('password_reset').insert([
+    const { error: insertError } = await supabase.from('password_reset').insert([
       {
         token,
         user_id: user.id,
@@ -38,12 +43,21 @@ router.post('/', async (req, res) => {
       },
     ]);
 
-    // ✅ Usamos tu función modular para enviar el email
+    if (insertError) {
+      console.error('❌ Error al insertar token:', insertError);
+      return res.status(500).json({ error: 'No se pudo generar token' });
+    }
+
+    console.log('🔐 Token generado y guardado');
+
+    // ✅ Aquí se llama la función que está fallando silenciosamente
     await sendPasswordResetEmail(email, token);
+
+    console.log('✅ Email de recuperación enviado a:', email);
 
     res.status(200).json({ message: 'Correo enviado correctamente' });
   } catch (err) {
-    console.error('❌ Error al enviar el correo:', err);
+    console.error('❌ Error general al procesar solicitud de recuperación:', err);
     res.status(500).json({ error: 'Error al enviar correo' });
   }
 });
