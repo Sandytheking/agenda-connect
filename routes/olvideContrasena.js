@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
   try {
     const { data: user, error: userError } = await supabase
       .from('clients')
-      .select('id, business_name')
+      .select('id, name')
       .eq('email', email)
       .single();
 
