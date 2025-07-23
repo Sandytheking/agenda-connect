@@ -9,7 +9,8 @@ const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 router.post('/', async (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email?.trim().toLowerCase();
+
 
   if (!email) {
     console.log('❌ Email no proporcionado en el body');
@@ -22,7 +23,7 @@ router.post('/', async (req, res) => {
     const { data: user, error: userError } = await supabase
       .from('clients')
       .select('id, name')
-      .eq('email', email)
+      .ilike('email', email)
       .single();
 
     if (userError || !user) {
