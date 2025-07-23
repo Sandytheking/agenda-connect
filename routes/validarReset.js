@@ -9,7 +9,7 @@ router.get('/api/validar-reset/:token', async (req, res) => {
   const { token } = req.params;
 
   const { data: tokenRow, error } = await supabase
-    .from('password_reset_tokens')
+    .from('password_reset')
     .select('expires_at')
     .eq('token', token)
     .single();

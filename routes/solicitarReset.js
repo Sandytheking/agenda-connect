@@ -18,11 +18,12 @@ router.post('/', async (req, res) => {
   const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
 
-  await supabase.from('password_resets').insert({
-    email,
-    token,
-    expires_at: expires.toISOString()
-  });
+  await supabase.from('password_reset').insert({
+  email,
+  token,
+  expires_at: expires.toISOString()
+});
+
 
   // Enviar correo
   await sendPasswordResetEmail(email, token);
