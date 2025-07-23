@@ -1,5 +1,5 @@
 // 📁 routes/restablecerContrasena.js
-//hola
+
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-router.post('/api/restablecer-contrasena', async (req, res) => {
+router.post('/api/restablecer-password', async (req, res) => {
   const { token, nuevaContrasena } = req.body;
 
   if (!token || !nuevaContrasena) {
@@ -17,7 +17,7 @@ router.post('/api/restablecer-contrasena', async (req, res) => {
   try {
     // 1. Buscar el token en la tabla password_reset_tokens
     const { data: tokenRow, error: tokenError } = await supabase
-      .from('password_reset_tokens')
+      .from('password_reset')
       .select('id, user_id, expires_at')
       .eq('token', token)
       .single();
