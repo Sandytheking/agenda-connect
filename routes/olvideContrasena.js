@@ -1,72 +1,78 @@
-// 📁 routes/olvideContrasena.js
-
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
 const router = express.Router();
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-// 📧 Transportador usando tus variables SMTP
+// Configura Supabase
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// Configura el transporte SMTP
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT),
-  secure: false, // true solo si usas puerto 465
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
 
-router.post('/', async (req, res) => {
+router.post('/api/restablecer-password', async (req, res) => {
   const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: 'Email es requerido' });
+
+  if (!email) return res.status(400).json({ error: 'El correo es obligatorio' });
+
+  // Buscar cliente
+  const { data: client, error } = await supabase
+    .from('clients')
+    .select('id, name')
+    .eq('email', email)
+    .single();
+
+  // No revelamos si el correo existe o no
+  if (error || !client) {
+    return res.json({
+      success: true,
+      message: 'Si el correo está registrado, se ha enviado un enlace',
+    });
   }
 
+  // Generar token y fecha de expiración (1 hora)
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+
+  // Insertar en tabla password_reset
+  await supabase.from('password_reset').insert({
+    token,
+    user_id: client.id,
+    expires_at: expiresAt,
+  });
+
+  const resetLink = `https://agenda-connect.com/restablecer-password?token=${token}`;
+
+  // Enviar correo
   try {
-    const { data: user, error: userError } = await supabase
-      .from('clients')
-      .select('id, business_name')
-      .eq('email', email)
-      .single();
-
-    if (userError || !user) {
-      return res.status(200).json({ message: 'Correo enviado si existe' });
-    }
-
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
-
-    await supabase.from('password_reset').insert([
-      {
-        token,
-        user_id: user.id,
-        expires_at: expiresAt.toISOString(),
-      },
-    ]);
-
-    const link = `https://agenda-connect.com/restablecer-contrasena?token=${token}`;
-
     await transporter.sendMail({
       from: `"Agenda Connect" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: '🔐 Restablecer tu contraseña - Agenda Connect',
+      subject: '🔐 Restablece tu contraseña',
       html: `
-        <p>Hola <strong>${user.business_name}</strong>,</p>
+        <p>Hola ${client.name || ''},</p>
         <p>Haz clic en el siguiente enlace para restablecer tu contraseña:</p>
-        <p><a href="${link}">${link}</a></p>
-        <p>Este enlace expira en 1 hora.</p>
-        <br/>
-        <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
+        <a href="${resetLink}">${resetLink}</a>
+        <p><b>Este enlace expirará en 1 hora.</b></p>
       `,
     });
 
-    res.json({ success: true, message: 'Correo enviado correctamente' });
-  } catch (error) {
-    console.error('❌ Error al enviar correo de recuperación:', error);
-    res.status(500).json({ error: 'Error al enviar correo' });
+    res.json({ success: true, message: 'Correo enviado' });
+  } catch (err) {
+    console.error('Error al enviar el correo:', err);
+    res.status(500).json({ error: 'Error al enviar el correo' });
   }
 });
 
