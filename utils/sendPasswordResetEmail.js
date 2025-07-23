@@ -5,6 +5,10 @@ import nodemailer from 'nodemailer';
 export async function sendPasswordResetEmail(to, token) {
   const resetUrl = `https://www.agenda-connect.com/restablecer-password/${token}`;
 
+console.log('📧 Configuración SMTP:');
+console.log('SMTP_USER:', process.env.SMTP_USER);
+console.log('SMTP_PASS:', process.env.SMTP_PASS);
+
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT),
