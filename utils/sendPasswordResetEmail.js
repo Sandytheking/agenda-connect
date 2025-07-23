@@ -2,27 +2,41 @@
 
 import nodemailer from 'nodemailer';
 
-export async function sendPasswordResetEmail(to, token, nombre) {
+export async function sendPasswordResetEmail(to, token) {
   const resetUrl = `https://www.agenda-connect.com/restablecer-password/${token}`;
 
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: false, // true si usas puerto 465
     auth: {
-      user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASS
-    }
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
   });
 
-  await transporter.sendMail({
-    from: `"Agenda Connect" <${process.env.SMTP_EMAIL}>`,
-    to,
-    subject: 'Recuperar tu contraseña',
-    html: `
-      <p>Hola <strong>${nombre}</strong>,</p>
-      <p>Haz clic en el siguiente enlace para recuperar tu contraseña:</p>
-      <a href="${resetUrl}">${resetUrl}</a>
-      <p>Este enlace expirará en 1 hora.</p>
-      <p>Agenda Connect.</p>
-    `
-  });
+  const html = `
+    <div style="font-family: sans-serif; line-height: 1.5;">
+      <h2>Recupera tu contraseña</h2>
+      <p>Hola,</p>
+      <p>Haz clic en el siguiente enlace para restablecer tu contraseña:</p>
+      <p><a href="${resetUrl}">${resetUrl}</a></p>
+      <p><strong>Este enlace expirará en 1 hora.</strong></p>
+      <br>
+      <p>Agenda Connect</p>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: '"Agenda Connect" <no-reply@agenda-connect.com>',
+      to,
+      subject: '🔐 Recupera tu contraseña - Agenda Connect',
+      html,
+    });
+    console.log('✅ Email de recuperación enviado a:', to);
+  } catch (error) {
+    console.error('❌ Error al enviar correo de recuperación:', error);
+    throw error;
+  }
 }
