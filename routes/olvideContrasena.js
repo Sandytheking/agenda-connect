@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
   try {
     const { data: user, error: userError } = await supabase
       .from('clients')
-      .select('id, name')
+      .select('id, nombre')
       .ilike('email', email)
       .single();
 
