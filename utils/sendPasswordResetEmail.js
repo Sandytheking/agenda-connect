@@ -11,7 +11,7 @@ export async function sendPasswordResetEmail(to, token) {
     service: 'gmail',
     auth: {
       user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASSWORD
+      pass: process.env.SMTP_PASS
     }
   });
 
@@ -24,6 +24,7 @@ export async function sendPasswordResetEmail(to, token) {
       <p>Haz clic en el siguiente enlace para recuperar tu contraseña:</p>
       <a href="${resetUrl}">${resetUrl}</a>
       <p>Este enlace expirará en 1 hora.</p>
+      <p>Agenda Connect.</p>
     `
   });
 }
