@@ -8,12 +8,14 @@ import nodemailer from 'nodemailer';
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-// Configura tu transportador de nodemailer
+// 📧 Transportador usando tus variables SMTP
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // o smtp
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT),
+  secure: false, // true solo si usas puerto 465
   auth: {
-    user: process.env.EMAIL_USER, // tu correo
-    pass: process.env.EMAIL_PASS, // tu contraseña o app password
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
 });
 
@@ -24,7 +26,6 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    // Buscar usuario
     const { data: user, error: userError } = await supabase
       .from('clients')
       .select('id, business_name')
@@ -32,14 +33,12 @@ router.post('/', async (req, res) => {
       .single();
 
     if (userError || !user) {
-      return res.status(200).json({ message: 'Correo enviado si existe' }); // no revelamos si existe
+      return res.status(200).json({ message: 'Correo enviado si existe' });
     }
 
-    // Generar token seguro
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
 
-    // Guardar token
     await supabase.from('password_reset').insert([
       {
         token,
@@ -48,29 +47,26 @@ router.post('/', async (req, res) => {
       },
     ]);
 
-    // Construir enlace
     const link = `https://agenda-connect.com/restablecer-contrasena?token=${token}`;
 
-    // Enviar correo
     await transporter.sendMail({
-      from: `"Agenda Connect" <${process.env.EMAIL_USER}>`,
+      from: `"Agenda Connect" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: '🔐 Restablecer contraseña',
+      subject: '🔐 Restablecer tu contraseña - Agenda Connect',
       html: `
-        <p>Hola <b>${user.business_name}</b>,</p>
-        <p>Recibimos una solicitud para restablecer tu contraseña.</p>
-        <p>Haz clic en el siguiente enlace para crear una nueva:</p>
-        <p><a href="${link}">Restablecer contraseña</a></p>
-        <p>Este enlace expirará en 1 hora.</p>
-        <br>
-        <p>Si no solicitaste este cambio, ignora este mensaje.</p>
+        <p>Hola <strong>${user.business_name}</strong>,</p>
+        <p>Haz clic en el siguiente enlace para restablecer tu contraseña:</p>
+        <p><a href="${link}">${link}</a></p>
+        <p>Este enlace expira en 1 hora.</p>
+        <br/>
+        <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
       `,
     });
 
-    res.json({ success: true, message: 'Correo enviado' });
+    res.json({ success: true, message: 'Correo enviado correctamente' });
   } catch (error) {
-    console.error('❌ Error al procesar olvideContrasena:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('❌ Error al enviar correo de recuperación:', error);
+    res.status(500).json({ error: 'Error al enviar correo' });
   }
 });
 
