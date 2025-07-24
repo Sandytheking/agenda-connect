@@ -24,6 +24,7 @@ import superadminRoutes from './routes/superadmin.js';
 import restablecerContrasena from './routes/restablecerContrasena.js';
 import validarResetRoute from './routes/validarReset.js';
 import olvideContrasenaRoute from './routes/olvideContrasena.js';
+import analyticsRouter from './routes/analytics.js';
 
 
 // Cargar variables de entorno
@@ -111,6 +112,7 @@ app.use('/api', superadminRoutes);
 app.use('/api/restablecer-contrasena', restablecerContrasena);
 app.use(validarResetRoute);
 app.use('/api/olvide-contrasena', olvideContrasenaRoute);
+app.use(analyticsRouter);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
