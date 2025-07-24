@@ -24,7 +24,7 @@ router.post('/', async (req, res) => {
   try {
     const { data: user, error: userError } = await supabase
       .from('clients')
-      .select('email, nombre, user_id')
+      .select('id, email, nombre, user_id')  // ← Asegúrate de incluir `user_id`
       .eq('email', email)
       .single();
 
@@ -38,19 +38,20 @@ router.post('/', async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
 
+console.log('🧾 Datos del usuario para el token:', user);
+
     // 👇 Aquí ahora también guardamos user_id en password_resets
     const { error: insertError } = await supabase
      await supabase
   .from('password_resets') 
   .insert([
-    {
-      token,
-      email: user.email, 
-      user_id: user.id, // ✅ ← esto es lo que faltaba
-      expires_at: expiresAt.toISOString(),
-    },
-  ]);
-
+  {
+    token,
+    email: user.email,
+    user_id: user.user_id, // 👈 ¡Muy importante!
+    expires_at: expiresAt.toISOString(),
+  }
+])
 
     if (insertError) {
       console.error('❌ Error al insertar token:', insertError);
