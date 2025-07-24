@@ -2,11 +2,14 @@
 
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
-import { sendPasswordResetEmail } from '../utils/sendPasswordResetEmail.js';
 
 const router = express.Router();
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+// Usa la clave de servicio (con privilegios administrativos)
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 router.post('/api/restablecer-contrasena', async (req, res) => {
   const { token, nuevaContrasena } = req.body;
@@ -16,10 +19,10 @@ router.post('/api/restablecer-contrasena', async (req, res) => {
   }
 
   try {
-    // 1. Buscar el token en la tabla password_reset_tokens
+    // 1. Buscar el token
     const { data: tokenRow, error: tokenError } = await supabase
       .from('password_resets')
-      .select('expires_at')
+      .select('email, expires_at')
       .eq('token', token)
       .single();
 
@@ -27,35 +30,31 @@ router.post('/api/restablecer-contrasena', async (req, res) => {
       return res.status(400).json({ error: 'Token inválido o expirado' });
     }
 
-    // 2. Verificar si ya expiró
+    // 2. Validar expiración
     const ahora = new Date();
     const expira = new Date(tokenRow.expires_at);
-
     if (expira < ahora) {
       return res.status(400).json({ error: 'El token ha expirado' });
     }
 
-    // 3. Encriptar nueva contraseña
-    const hashedPassword = await bcrypt.hash(nuevaContrasena, 10);
-
-    // 4. Actualizar contraseña del usuario
-    const { error: updateError } = await supabase
-      .from('clients')
-      .update({ password: hashedPassword })
-      .eq('id', tokenRow.user_id);
+    // 3. Cambiar contraseña del usuario en Supabase Auth
+    const { error: updateError } = await supabase.auth.admin.updateUserByEmail(
+      tokenRow.email,
+      { password: nuevaContrasena }
+    );
 
     if (updateError) {
-      console.error('❌ Error al actualizar contraseña:', updateError.message);
-      return res.status(500).json({ error: 'No se pudo actualizar la contraseña' });
+      console.error('❌ Error al actualizar la contraseña:', updateError.message);
+      return res.status(500).json({ error: 'Error al actualizar la contraseña del usuario' });
     }
 
-    // 5. Eliminar el token usado
-    await supabase.from('password_resets').delete().eq('id', tokenRow.id);
+    // 4. Eliminar el token
+    await supabase.from('password_resets').delete().eq('token', token);
 
-    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+    return res.json({ success: true, message: '✅ Contraseña actualizada correctamente' });
   } catch (err) {
-    console.error('❌ Error general en restablecer contraseña:', err.message);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('❌ Error general:', err.message);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
