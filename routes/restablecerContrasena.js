@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-router.post('/api/restablecer-contrasena', async (req, res) => {
+router.post('/', async (req, res) => {
   const { token, nuevaContrasena } = req.body;
 
   if (!token || !nuevaContrasena) {
