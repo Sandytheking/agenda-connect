@@ -40,15 +40,17 @@ router.post('/', async (req, res) => {
 
     // 👇 Aquí ahora también guardamos user_id en password_resets
     const { error: insertError } = await supabase
-      .from('password_resets')
-      .insert([
-        {
-          token,
-          email: user.email,
-          user_id: user.user_id,  // ✅ Aquí está el fix clave
-          expires_at: expiresAt.toISOString(),
-        },
-      ]);
+     await supabase
+  .from('password_resets') 
+  .insert([
+    {
+      token,
+      email: user.email, 
+      user_id: user.id, // ✅ ← esto es lo que faltaba
+      expires_at: expiresAt.toISOString(),
+    },
+  ]);
+
 
     if (insertError) {
       console.error('❌ Error al insertar token:', insertError);
