@@ -18,7 +18,7 @@ router.post('/api/restablecer-contrasena', async (req, res) => {
   try {
     // 1. Buscar el token en la tabla password_reset_tokens
     const { data: tokenRow, error: tokenError } = await supabase
-      .from('password_reset')
+      .from('password_resets')
       .select('expires_at')
       .eq('token', token)
       .single();
@@ -50,7 +50,7 @@ router.post('/api/restablecer-contrasena', async (req, res) => {
     }
 
     // 5. Eliminar el token usado
-    await supabase.from('password_reset').delete().eq('id', tokenRow.id);
+    await supabase.from('password_resets').delete().eq('id', tokenRow.id);
 
     res.json({ success: true, message: 'Contraseña actualizada correctamente' });
   } catch (err) {
