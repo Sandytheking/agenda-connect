@@ -33,12 +33,8 @@ router.post('/', async (req, res) => {
       return res.status(200).json({ message: 'Correo enviado si existe' });
     }
 
-    console.log('✅ Usuario encontrado:', user.nombre);
-
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
-
-console.log('🧾 Datos del usuario para el token:', user);
 
     // 👇 Aquí ahora también guardamos user_id en password_resets
     const { error: insertError } = await supabase
