@@ -9,8 +9,8 @@ router.get('/api/validar-reset/:token', async (req, res) => {
   const { token } = req.params;
 
   const { data: tokenRow, error } = await supabase
-    .from('password_reset')
-    .select('expires_at')
+    .from('password_resets') // asegúrate de que sea la tabla correcta
+    .select('expires_at, used') // 👈 agregamos 'used'
     .eq('token', token)
     .single();
 
@@ -21,10 +21,12 @@ router.get('/api/validar-reset/:token', async (req, res) => {
   const ahora = new Date();
   const expira = new Date(tokenRow.expires_at);
 
-  if (expira < ahora) {
+  // ❌ Token expirado o ya usado
+  if (expira < ahora || tokenRow.used) {
     return res.json({ valid: false });
   }
 
+  // ✅ Token válido y no usado
   res.json({ valid: true });
 });
 
