@@ -32,51 +32,13 @@ router.get('/:slug', async (req, res) => {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
-    // 2. Buscar configuración existente
-    const { data: config, error: configError } = await supabase
-      .from('config')
-      .select('*')
-      .eq('client_id', client.id)
-      .single();
-
-    // 3. Si existe la config, la devolvemos
-    if (config) {
-      return res.json(config);
-    }
-
-    // 4. Si no existe, creamos una configuración por defecto
-    const defaultConfig = {
-      client_id: client.id,
-      max_per_day: 2,
-      max_per_hour: 2,
-      duration_minutes: 30,
-      work_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-      horarios: {
-        Monday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
-        Tuesday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
-        Wednesday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
-        Thursday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
-        Friday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
-        Saturday: { entrada: '08:00', salida: '12:00', almuerzoInicio: null, almuerzoFin: null },
-        Sunday: { entrada: '00:00', salida: '00:00', almuerzoInicio: null, almuerzoFin: null }
-      },
-      per_day_config: null, // para no romper tu frontend actual
-      created_at: new Date().toISOString()
-    };
-
-    const { error: insertError } = await supabase.from('config').insert(defaultConfig);
-
-    if (insertError) {
-      return res.status(500).json({ error: 'Error creando configuración por defecto' });
-    }
-
-    return res.json(defaultConfig);
+    // ✅ Si ya tiene la config directamente en clients, la retornamos
+    return res.json(client);
   } catch (err) {
+    console.error('❌ Error en GET /config/:slug:', err);
     return res.status(500).json({ error: 'Error inesperado' });
   }
 });
-
-
 
 
 // ───────────────────────────────────────────────────────────
