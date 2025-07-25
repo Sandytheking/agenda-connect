@@ -9,6 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+
 router.get('/api/public-config/:slug', async (req, res) => {
   const { slug } = req.params;
   console.log('[public-config] slug recibido =>', slug);
@@ -24,7 +25,8 @@ router.get('/api/public-config/:slug', async (req, res) => {
         duration_minutes,
         max_per_day,
         max_per_hour,
-        timezone
+        timezone,
+        per_day_config  -- 🆕 añadido aquí
       `)
       .eq('slug', slug)
       .single();
@@ -34,20 +36,17 @@ router.get('/api/public-config/:slug', async (req, res) => {
       return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
-    // ✅ Valores que van al frontend (sin convertir horas)
+    // Valores con fallback por si vienen null
     data.duration_minutes = Number(data.duration_minutes || 30);
     data.max_per_day      = Number(data.max_per_day || 5);
     data.max_per_hour     = Number(data.max_per_hour || 1);
     data.start_hour       = data.start_hour || "08:00";
     data.end_hour         = data.end_hour   || "17:00";
+    data.work_days        = (data.work_days || []).map(String);
+    data.per_day_config   = data.per_day_config || {}; // 🆕 aseguramos estructura
 
-data.work_days = (data.work_days || []).map(String);
-
-
-console.log('✅ work_days convertidos a números:', data.work_days);
-
-    // Log para confirmar
-    console.log("🔁 work_days enviados:", data.work_days);
+    console.log('✅ work_days convertidos a números:', data.work_days);
+    console.log('🔁 per_day_config:', data.per_day_config);
 
     res.json(data);
   } catch (e) {

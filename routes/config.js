@@ -16,29 +16,40 @@ const supabase = createClient(
 // ───────────────────────────────────────────────────────────
 //  GET /api/config/:slug   (protegido)
 // ───────────────────────────────────────────────────────────
+
 router.get('/api/config/:slug', verifyAuth, async (req, res) => {
   const { slug } = req.params;
 
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select(
-        `
-          max_per_day,
-          max_per_hour,
-          duration_minutes,
-          work_days,
-          start_hour,
-          end_hour,
-          timezone
-        `
-      )
+      .select(`
+        max_per_day,
+        max_per_hour,
+        duration_minutes,
+        work_days,
+        start_hour,
+        end_hour,
+        timezone,
+        per_day_config  -- 🆕 Añadido aquí
+      `)
       .eq('slug', slug)
       .single();
 
     if (error || !data) {
       return res.status(404).json({ error: 'Configuración no encontrada' });
     }
+
+    // Aseguramos defaults por si vienen null
+    data.duration_minutes = Number(data.duration_minutes || 30);
+    data.max_per_day      = Number(data.max_per_day || 5);
+    data.max_per_hour     = Number(data.max_per_hour || 1);
+    data.start_hour       = data.start_hour || "08:00";
+    data.end_hour         = data.end_hour   || "17:00";
+    data.work_days        = (data.work_days || []).map(String);
+
+    // ✅ Garantizar que per_day_config sea un objeto (incluso si null)
+    data.per_day_config = data.per_day_config || {};
 
     res.json(data);
   } catch (err) {
@@ -47,9 +58,11 @@ router.get('/api/config/:slug', verifyAuth, async (req, res) => {
   }
 });
 
+
 // ───────────────────────────────────────────────────────────
 //  PUT /api/config/:slug   (protegido)
 // ───────────────────────────────────────────────────────────
+
 router.put('/api/config/:slug', verifyAuth, async (req, res) => {
   const { slug } = req.params;
 
@@ -57,25 +70,26 @@ router.put('/api/config/:slug', verifyAuth, async (req, res) => {
     max_per_day,
     max_per_hour,
     duration_minutes,
-    work_days,          // ← nuevo  (array de strings ej: ["Mon","Tue"])
-    start_hour,         // ← nuevo  (string "09" … "17")
-    end_hour,           // ← nuevo  (string "18" … "22")
-    timezone            // ← opcional ("America/Santo_Domingo")
+    work_days,
+    start_hour,
+    end_hour,
+    timezone,
+    per_day_config // ← 🆕 este es el nuevo campo que enviaremos desde el frontend
   } = req.body;
 
-  // ─── Validaciones mínimas ───────────────────────────────
   if (!max_per_day || !max_per_hour) {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
   if (!start_hour || !end_hour) {
-    return res
-      .status(400)
-      .json({ error: 'Debes indicar hora de inicio y fin de trabajo' });
+    return res.status(400).json({ error: 'Debes indicar hora de inicio y fin de trabajo' });
   }
   if (!Array.isArray(work_days) || work_days.length === 0) {
-    return res
-      .status(400)
-      .json({ error: 'Debes indicar al menos un día laborable' });
+    return res.status(400).json({ error: 'Debes indicar al menos un día laborable' });
+  }
+
+  // ✅ Validación opcional para per_day_config (si se desea hacer)
+  if (per_day_config && typeof per_day_config !== 'object') {
+    return res.status(400).json({ error: 'Formato inválido para per_day_config' });
   }
 
   try {
@@ -85,18 +99,17 @@ router.put('/api/config/:slug', verifyAuth, async (req, res) => {
         max_per_day: Number(max_per_day),
         max_per_hour: Number(max_per_hour),
         duration_minutes: duration_minutes ? Number(duration_minutes) : null,
-        work_days,          // text[] en la DB
-        start_hour,         // guardado como texto (ej: "09")
-        end_hour,           // guardado como texto (ej: "18")
-        timezone            // opcional
+        work_days,
+        start_hour,
+        end_hour,
+        timezone,
+        per_day_config // ← 🆕 nuevo campo JSONB
       })
       .eq('slug', slug);
 
     if (error) {
       console.error('❌ Error al actualizar configuración:', error);
-      return res
-        .status(500)
-        .json({ error: 'Error al actualizar configuración' });
+      return res.status(500).json({ error: 'Error al actualizar configuración' });
     }
 
     res.json({ success: true });
@@ -105,5 +118,7 @@ router.put('/api/config/:slug', verifyAuth, async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
+
 
 export default router;
