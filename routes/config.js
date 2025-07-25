@@ -21,42 +21,63 @@ router.get('/api/config/:slug', verifyAuth, async (req, res) => {
   const { slug } = req.params;
 
   try {
-    const { data, error } = await supabase
-      .from('clients')
-      .select(`
-        max_per_day,
-        max_per_hour,
-        duration_minutes,
-        work_days,
-        start_hour,
-        end_hour,
-        timezone,
-        per_day_config  -- 🆕 Añadido aquí
-      `)
-      .eq('slug', slug)
-      .single();
+const { data, error } = await supabase
+  .from('clients')
+  .select(`
+    max_per_day,
+    max_per_hour,
+    duration_minutes,
+    work_days,
+    start_hour,
+    end_hour,
+    timezone,
+    per_day_config,
+    is_active,
+    expiration_date
+  `)
+  .eq('slug', slug)
+  .single();
+
 
     if (error || !data) {
       return res.status(404).json({ error: 'Configuración no encontrada' });
     }
 
-    // Aseguramos defaults por si vienen null
-    data.duration_minutes = Number(data.duration_minutes || 30);
-    data.max_per_day      = Number(data.max_per_day || 5);
-    data.max_per_hour     = Number(data.max_per_hour || 1);
-    data.start_hour       = data.start_hour || "08:00";
-    data.end_hour         = data.end_hour   || "17:00";
-    data.work_days        = (data.work_days || []).map(String);
+    // Horario por defecto para cada día
+    const defaultHorario = {
+      entrada: "08:00",
+      salida: "17:00",
+      almuerzoInicio: null,
+      almuerzoFin: null
+    };
 
-    // ✅ Garantizar que per_day_config sea un objeto (incluso si null)
-    data.per_day_config = data.per_day_config || {};
+    const diasSemana = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-    res.json(data);
+    // Si no hay horarios guardados, generamos uno por defecto
+    const horarios = {};
+    for (const dia of diasSemana) {
+      horarios[dia] = data.horarios?.[dia] || defaultHorario;
+    }
+
+    res.json({
+  max_per_day: data.max_per_day,
+  max_per_hour: data.max_per_hour,
+  duration_minutes: data.duration_minutes,
+  work_days: data.work_days,
+  start_hour: data.start_hour,
+  end_hour: data.end_hour,
+  timezone: data.timezone,
+  per_day_config: data.per_day_config || null,
+  is_active: data.is_active !== false,
+  expiration_date: data.expiration_date || null
+});
+
   } catch (err) {
     console.error('❌ GET /api/config error:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
 
 
 // ───────────────────────────────────────────────────────────
