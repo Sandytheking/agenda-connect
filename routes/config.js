@@ -17,66 +17,65 @@ const supabase = createClient(
 //  GET /api/config/:slug   (protegido)
 // ───────────────────────────────────────────────────────────
 
-router.get('/api/config/:slug', verifyAuth, async (req, res) => {
+router.get('/:slug', async (req, res) => {
   const { slug } = req.params;
 
   try {
-const { data, error } = await supabase
-  .from('clients')
-  .select(`
-    max_per_day,
-    max_per_hour,
-    duration_minutes,
-    work_days,
-    start_hour,
-    end_hour,
-    timezone,
-    per_day_config,
-    is_active,
-    expiration_date
-  `)
-  .eq('slug', slug)
-  .single();
+    // 1. Buscar cliente por slug
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('slug', slug)
+      .single();
 
-
-    if (error || !data) {
-      return res.status(404).json({ error: 'Configuración no encontrada' });
+    if (clientError || !client) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
-    // Horario por defecto para cada día
-    const defaultHorario = {
-      entrada: "08:00",
-      salida: "17:00",
-      almuerzoInicio: null,
-      almuerzoFin: null
+    // 2. Buscar configuración existente
+    const { data: config, error: configError } = await supabase
+      .from('config')
+      .select('*')
+      .eq('client_id', client.id)
+      .single();
+
+    // 3. Si existe la config, la devolvemos
+    if (config) {
+      return res.json(config);
+    }
+
+    // 4. Si no existe, creamos una configuración por defecto
+    const defaultConfig = {
+      client_id: client.id,
+      max_per_day: 1,
+      max_per_hour: 1,
+      duration_minutes: 30,
+      work_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      horarios: {
+        Monday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
+        Tuesday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
+        Wednesday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
+        Thursday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
+        Friday: { entrada: '08:00', salida: '17:00', almuerzoInicio: null, almuerzoFin: null },
+        Saturday: { entrada: '08:00', salida: '12:00', almuerzoInicio: null, almuerzoFin: null },
+        Sunday: { entrada: '00:00', salida: '00:00', almuerzoInicio: null, almuerzoFin: null }
+      },
+      per_day_config: null, // para no romper tu frontend actual
+      created_at: new Date().toISOString()
     };
 
-    const diasSemana = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const { error: insertError } = await supabase.from('config').insert(defaultConfig);
 
-    // Si no hay horarios guardados, generamos uno por defecto
-    const horarios = {};
-    for (const dia of diasSemana) {
-      horarios[dia] = data.horarios?.[dia] || defaultHorario;
+    if (insertError) {
+      return res.status(500).json({ error: 'Error creando configuración por defecto' });
     }
 
-    res.json({
-  max_per_day: data.max_per_day,
-  max_per_hour: data.max_per_hour,
-  duration_minutes: data.duration_minutes,
-  work_days: data.work_days,
-  start_hour: data.start_hour,
-  end_hour: data.end_hour,
-  timezone: data.timezone,
-  per_day_config: data.per_day_config || null,
-  is_active: data.is_active !== false,
-  expiration_date: data.expiration_date || null
-});
-
+    return res.json(defaultConfig);
   } catch (err) {
-    console.error('❌ GET /api/config error:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    return res.status(500).json({ error: 'Error inesperado' });
   }
 });
+
 
 
 
