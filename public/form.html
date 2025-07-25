@@ -173,15 +173,16 @@
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const diaActual = dayNames[diaSemana];
 
-      const configDia = cfg.per_day_config?.[diaActual];
-      if (!configDia || !configDia.enabled) return lista;
+const configDia = cfg.per_day_config?.[diaActual];
+if (!configDia || !configDia.activo) return lista;
 
-      const paso = Number(cfg.duration_minutes || 30);
+const paso = Number(cfg.duration_minutes || 30);
 
-      const [sh, sm] = configDia.start.split(':').map(Number);
-      const [eh, em] = configDia.end.split(':').map(Number);
-      const almuerzoIni = configDia.lunch?.start || null;
-      const almuerzoFin = configDia.lunch?.end || null;
+const [sh, sm] = configDia.entrada.split(':').map(Number);
+const [eh, em] = configDia.salida.split(':').map(Number);
+const almuerzoIni = configDia.almuerzoInicio || null;
+const almuerzoFin = configDia.almuerzoFin || null;
+
 
       const desde = new Date(); desde.setHours(sh, sm, 0, 0);
       const hasta = new Date(); hasta.setHours(eh, em, 0, 0);

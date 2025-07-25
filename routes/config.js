@@ -47,8 +47,8 @@ router.get('/:slug', async (req, res) => {
     // 4. Si no existe, creamos una configuración por defecto
     const defaultConfig = {
       client_id: client.id,
-      max_per_day: 1,
-      max_per_hour: 1,
+      max_per_day: 2,
+      max_per_hour: 2,
       duration_minutes: 30,
       work_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
       horarios: {
@@ -91,17 +91,15 @@ router.put('/api/config/:slug', verifyAuth, async (req, res) => {
     max_per_hour,
     duration_minutes,
     work_days,
-    start_hour,
-    end_hour,
+    //start_hour,
+    //end_hour,
     timezone,
     per_day_config // ← 🆕 este es el nuevo campo que enviaremos desde el frontend
   } = req.body;
 
   if (!max_per_day || !max_per_hour) {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
-  }
-  if (!start_hour || !end_hour) {
-    return res.status(400).json({ error: 'Debes indicar hora de inicio y fin de trabajo' });
+
   }
   if (!Array.isArray(work_days) || work_days.length === 0) {
     return res.status(400).json({ error: 'Debes indicar al menos un día laborable' });
@@ -120,8 +118,8 @@ router.put('/api/config/:slug', verifyAuth, async (req, res) => {
         max_per_hour: Number(max_per_hour),
         duration_minutes: duration_minutes ? Number(duration_minutes) : null,
         work_days,
-        start_hour,
-        end_hour,
+        //start_hour,
+        //end_hour,
         timezone,
         per_day_config // ← 🆕 nuevo campo JSONB
       })
