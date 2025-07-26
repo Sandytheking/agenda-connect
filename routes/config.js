@@ -24,7 +24,7 @@ router.get('/:slug', async (req, res) => {
     // 1. Buscar cliente por slug
     const { data, error } = await supabase
   .from('clients')
-  .select('max_per_day, max_per_hour, duration_minutes, work_days, per_day_config, start_hour, end_hour, expiration_date, is_active, refresh_token')
+  .select('max_per_day, max_per_hour, duration_minutes, work_days, per_day_config, expiration_date, is_active, refresh_token')
   .eq('slug', slug)
   .single();
 
