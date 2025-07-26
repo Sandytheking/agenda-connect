@@ -17,15 +17,8 @@ router.get('/api/public-config/:slug', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select(`
-        nombre,
-        work_days,
-        duration_minutes,
-        max_per_day,
-        max_per_hour,
-        timezone,
-        per_day_config  -- 🆕 añadido aquí
-      `)
+      .select('nombre, work_days, duration_minutes, max_per_day, max_per_hour, timezone, per_day_config')
+
       .eq('slug', slug)
       .single();
 
