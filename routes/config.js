@@ -22,11 +22,12 @@ router.get('/:slug', async (req, res) => {
 
   try {
     // 1. Buscar cliente por slug
-    const { data: client, error: clientError } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('slug', slug)
-      .single();
+    const { data, error } = await supabase
+  .from('clients')
+  .select('max_per_day, max_per_hour, duration_minutes, work_days, per_day_config, start_hour, end_hour, expiration_date, is_active, refresh_token')
+  .eq('slug', slug)
+  .single();
+
 
     if (clientError || !client) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
