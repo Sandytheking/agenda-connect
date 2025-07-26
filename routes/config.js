@@ -2,6 +2,8 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { verifyAuth } from '../middleware/verifyAuth.js';
+import { getConfigBySlug } from '../supabaseClient.js';
+
 
 const router = express.Router();
 
@@ -21,25 +23,20 @@ router.get('/:slug', async (req, res) => {
   const { slug } = req.params;
 
   try {
-    // 1. Buscar cliente por slug
-    const { data, error } = await supabase
-  .from('clients')
-  .select('max_per_day, max_per_hour, duration_minutes, work_days, per_day_config, expiration_date, is_active, refresh_token')
-  .eq('slug', slug)
-  .single();
+    const client = await getConfigBySlug(slug); // ✅ usamos la función correcta
 
-
-    if (clientError || !client) {
+    if (!client) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
-    // ✅ Si ya tiene la config directamente en clients, la retornamos
+    console.log("🔍 config recibido del backend:", client);
     return res.json(client);
   } catch (err) {
     console.error('❌ Error en GET /config/:slug:', err);
     return res.status(500).json({ error: 'Error inesperado' });
   }
 });
+
 
 
 // ───────────────────────────────────────────────────────────

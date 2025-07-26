@@ -7,10 +7,11 @@ export const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPAB
 
 export async function getConfigBySlug(slug) {
   const { data: client, error } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+  .from('clients')
+  .select('slug, max_per_day, max_per_hour, duration_minutes, work_days, per_day_config, timezone, refresh_token, calendar_email, is_active, expiration_date')
+  .eq('slug', slug)
+  .single();
+
 
   if (error || !client) {
     console.error('❌ Error al obtener client:', error?.message);
