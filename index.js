@@ -97,7 +97,7 @@ app.get('/api/citas', async (req, res) => {
 app.use(express.static('public'));   // ← ya sirve archivos estáticos
 app.use('/', disponibilidadRoutes);
 app.use('/api/citas', crearCitaRoutes);
-app.use('/', configRoutes);
+app.use('/api/config', configRoutes);
 app.use('/', authRoutes);
 app.use('/', registroRoutes);
 app.use('/', oauthRoutes);   
