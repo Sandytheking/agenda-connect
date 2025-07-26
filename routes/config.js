@@ -51,6 +51,7 @@ router.put('/api/config/:slug', verifyAuth, async (req, res) => {
     work_days,
     //start_hour,
     //end_hour,
+    activo,
     timezone,
     per_day_config // ← 🆕 este es el nuevo campo que enviaremos desde el frontend
   } = req.body;
@@ -78,6 +79,7 @@ router.put('/api/config/:slug', verifyAuth, async (req, res) => {
         work_days,
         //start_hour,
         //end_hour,
+        activo,
         timezone,
         per_day_config // ← 🆕 nuevo campo JSONB
       })
