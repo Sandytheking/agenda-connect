@@ -23,20 +23,19 @@ router.get('/:slug', async (req, res) => {
   const { slug } = req.params;
 
   try {
-    const client = await getConfigBySlug(slug); // ✅ función reutilizada correctamente
+    const client = await getConfigBySlug(slug);
 
     if (!client) {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
-    console.log("🔍 config recibido del backend:", client);
+    console.log("🔍 config recibido del backend:", client); // ← aquí debe salir per_day_config
     return res.json(client);
   } catch (err) {
     console.error('❌ Error en GET /config/:slug:', err);
     return res.status(500).json({ error: 'Error inesperado' });
   }
 });
-
 
 // ───────────────────────────────────────────────────────────
 //  PUT /api/config/:slug   (protegido)
