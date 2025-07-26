@@ -16,7 +16,7 @@ export async function getConfigBySlug(slug) {
     console.error('❌ Error al obtener client:', error?.message);
     return null;
   }
-
+ console.log("📦 client completo desde Supabase:", client);
   return {
     ...client,
     duration_minutes: client.duration_minutes || 30,
