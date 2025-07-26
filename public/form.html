@@ -229,6 +229,7 @@ const almuerzoFin = configDia.almuerzoFin || null;
       }
       $('#btn').disabled = true;
       $('#msg').textContent = 'Enviando…';
+      console.log('📡 fetch config')
       const res = await fetch(`${api}/api/citas/${slug}/crear-cita`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
