@@ -21,8 +21,7 @@ export async function getConfigBySlug(slug) {
       timezone,
       refresh_token,
       activo,
-      calendar_email,
-      expiration_date
+      calendar_email
     `)
     .eq('slug', slug)
     .single();
