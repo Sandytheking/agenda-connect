@@ -13,11 +13,15 @@ export async function getConfigBySlug(slug) {
   .single();
 
 
+console.log("🔥 client crudo desde Supabase:", client);
+
   if (error || !client) {
     console.error('❌ Error al obtener client:', error?.message);
     return null;
   }
+
  console.log("📦 client completo desde Supabase:", client);
+
   return {
     ...client,
     duration_minutes: client.duration_minutes || 30,
