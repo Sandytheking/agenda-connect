@@ -78,8 +78,6 @@ if (per_day_config && typeof per_day_config !== 'object') {
         work_days,
         //start_hour,
         //end_hour,
-        activo,
-        timezone,
         per_day_config // ← 🆕 nuevo campo JSONB
       })
       .eq('slug', slug);
