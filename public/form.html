@@ -203,20 +203,26 @@
   return lista;
 }
 
-    async function cargarHorasDisponibles(fechaISO) {
-      $('#time').innerHTML = '<option>Cargando…</option>';
-      $('#time').disabled = true;
-      const libres = [];
-      for (const h of generarSlots(fechaISO)) {
-        const r = await fetch(`${api}/api/availability/${slug}?date=${fechaISO}&time=${h}`);
-        const { available } = await r.json();
-        if (available) libres.push(h);
-      }
-      $('#time').innerHTML = libres.length
-        ? `<option value=""></option>${libres.map(h => `<option value="${h}">${h}</option>`).join('')}`
-        : '<option>No hay horas libres</option>';
-      $('#time').disabled = !libres.length;
-    }
+   async function cargarHorasDisponibles(fechaISO) {
+  $('#time').innerHTML = '<option>Cargando…</option>';
+  $('#time').disabled = true;
+
+  try {
+    const r = await fetch(`${api}/api/available-hours/${slug}?date=${fechaISO}`);
+    const { available_hours } = await r.json();
+
+    $('#time').innerHTML = available_hours.length
+      ? `<option value=""></option>${available_hours.map(h => `<option value="${h}">${h}</option>`).join('')}`
+      : '<option>No hay horas libres</option>';
+      
+    $('#time').disabled = !available_hours.length;
+  } catch (err) {
+    console.error('❌ Error al cargar horas disponibles:', err);
+    $('#time').innerHTML = '<option>Error al cargar</option>';
+    $('#time').disabled = true;
+  }
+}
+
 
     $('#btn').onclick = async () => {
       const name = $('#name').value.trim();
