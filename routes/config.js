@@ -44,23 +44,27 @@ router.get('/:slug', async (req, res) => {
 router.put('/api/config/:slug', verifyAuth, async (req, res) => {
   const { slug } = req.params;
 
-const {
-  max_per_day,
-  max_per_hour,
-  duration_minutes,
-  work_days,
-  timezone,
-  activo,
-  per_day_config
-} = req.body;
+  const {
+    max_per_day,
+    max_per_hour,
+    duration_minutes,
+    work_days,
+    timezone,
+    activo,
+    per_day_config
+  } = req.body;
 
-if (
-  typeof max_per_day !== 'number' ||
-  typeof max_per_hour !== 'number' ||
-  typeof duration_minutes !== 'number'
-) {
-  return res.status(400).json({ error: 'Faltan campos requeridos o están mal formateados' });
-}
+  // ✅ Log para depuración
+  console.log("📥 Body recibido en PUT /config:", req.body);
+
+  if (
+    typeof max_per_day !== 'number' ||
+    typeof max_per_hour !== 'number' ||
+    typeof duration_minutes !== 'number'
+  ) {
+    return res.status(400).json({ error: 'Faltan campos requeridos o están mal formateados' });
+  }
+
 
 if (!Array.isArray(work_days) || work_days.length === 0) {
   return res.status(400).json({ error: 'Debes indicar al menos un día laborable' });
