@@ -54,7 +54,7 @@ router.post('/:slug/disponibilidad', async (req, res) => {
 });
 
 /* ---------- GET /api/availability/:slug (pública) ---------- */
-router.get('/api/availability/:slug', async (req, res) => {
+router.get('/availability/:slug', async (req, res) => {
   try {
     const { slug }       = req.params;
     const { date, time } = req.query;

@@ -95,7 +95,7 @@ app.get('/api/citas', async (req, res) => {
 
 // Montar rutas
 app.use(express.static('public'));   // ← ya sirve archivos estáticos
-app.use('/', disponibilidadRoutes);
+app.use('/api', disponibilidadRoutes);
 app.use('/api/citas', crearCitaRoutes);
 app.use('/api/config', configRoutes);
 app.use('/', authRoutes);
