@@ -70,12 +70,17 @@ router.get('/availability/:slug', async (req, res) => {
       }
     }
 
-    // 🔁 Fallback: consultar en Supabase
-    const { data: citas, error } = await supabase
-      .from('appointments')
-      .select('*')
-      .eq('slug', slug)
-      .eq('fecha', date);
+    // 🔁 Fallback: consultar en Supabase usando rango de fecha
+const inicioDelDia = new Date(year, month - 1, day, 0, 0);
+const finDelDia = new Date(year, month - 1, day + 1, 0, 0);
+
+const { data: citas, error } = await supabase
+  .from('appointments')
+  .select('*')
+  .eq('slug', slug)
+  .gte('inicio', inicioDelDia.toISOString())
+  .lt('inicio', finDelDia.toISOString());
+
 
     if (error) {
       console.error("❌ Supabase error:", error.message);
