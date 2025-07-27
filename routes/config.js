@@ -3,7 +3,7 @@ import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { verifyAuth } from '../middleware/verifyAuth.js';
 import { getConfigBySlug } from '../supabaseClient.js';
-
+//hola
 
 const router = express.Router();
 
