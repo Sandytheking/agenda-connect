@@ -19,7 +19,7 @@ const supabase = createClient(
 //  GET /api/config/:slug   (protegido)
 // ───────────────────────────────────────────────────────────
 
-router.get('/:slug', async (req, res) => {
+router.get('/:slug', async (req, res) => { 
   const { slug } = req.params;
 
   try {
@@ -41,7 +41,8 @@ router.get('/:slug', async (req, res) => {
 //  PUT /api/config/:slug   (protegido)
 // ───────────────────────────────────────────────────────────
 
-router.put('/api/config/:slug', verifyAuth, async (req, res) => {
+router.put('/:slug', verifyAuth, async (req, res) => {
+
   const { slug } = req.params;
 
   const {
