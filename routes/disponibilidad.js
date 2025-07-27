@@ -9,7 +9,7 @@ const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 // ✅ NUEVO: Endpoint público con fallback
-router.get('/api/availability/:slug', async (req, res) => {
+router.get('/availability/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
     const { date, time } = req.query;
