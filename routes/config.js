@@ -49,6 +49,8 @@ const {
   max_per_hour,
   duration_minutes,
   work_days,
+  timezone,
+  activo,
   per_day_config
 } = req.body;
 
@@ -79,6 +81,8 @@ if (per_day_config && typeof per_day_config !== 'object') {
         //start_hour,
         //end_hour,
         activo,
+        timezone,
+      
         per_day_config // ← 🆕 nuevo campo JSONB
       })
       .eq('slug', slug);
