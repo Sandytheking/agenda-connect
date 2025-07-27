@@ -25,6 +25,7 @@ import restablecerContrasena from './routes/restablecerContrasena.js';
 import validarResetRoute from './routes/validarReset.js';
 import olvideContrasenaRoute from './routes/olvideContrasena.js';
 import analyticsRouter from './routes/analytics.js';
+import availableHoursRouter from './routes/availableHours.js';
 
 
 // Cargar variables de entorno
@@ -113,6 +114,7 @@ app.use('/api/restablecer-contrasena', restablecerContrasena);
 app.use(validarResetRoute);
 app.use('/api/olvide-contrasena', olvideContrasenaRoute);
 app.use(analyticsRouter);
+app.use('/api', availableHoursRouter);
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
