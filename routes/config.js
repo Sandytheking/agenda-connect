@@ -54,8 +54,8 @@ router.put('/api/config/:slug', verifyAuth, async (req, res) => {
     per_day_config
   } = req.body;
 
-  // ✅ Log para depuración
-  console.log("📥 Body recibido en PUT /config:", req.body);
+  // 👇 ESTE LOG es el importante ahora mismo
+  console.log("📥 Body recibido en PUT /config:", JSON.stringify(req.body, null, 2));
 
   if (
     typeof max_per_day !== 'number' ||
