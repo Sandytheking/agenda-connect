@@ -44,30 +44,29 @@ router.get('/:slug', async (req, res) => {
 router.put('/api/config/:slug', verifyAuth, async (req, res) => {
   const { slug } = req.params;
 
-  const {
-    max_per_day,
-    max_per_hour,
-    duration_minutes,
-    work_days,
-    //start_hour,
-    //end_hour,
-    activo,
-    timezone,
-    per_day_config // ← 🆕 este es el nuevo campo que enviaremos desde el frontend
-  } = req.body;
+const {
+  max_per_day,
+  max_per_hour,
+  duration_minutes,
+  work_days,
+  per_day_config
+} = req.body;
 
-  if (!max_per_day || !max_per_hour) {
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
+if (
+  typeof max_per_day !== 'number' ||
+  typeof max_per_hour !== 'number' ||
+  typeof duration_minutes !== 'number'
+) {
+  return res.status(400).json({ error: 'Faltan campos requeridos o están mal formateados' });
+}
 
-  }
-  if (!Array.isArray(work_days) || work_days.length === 0) {
-    return res.status(400).json({ error: 'Debes indicar al menos un día laborable' });
-  }
+if (!Array.isArray(work_days) || work_days.length === 0) {
+  return res.status(400).json({ error: 'Debes indicar al menos un día laborable' });
+}
 
-  // ✅ Validación opcional para per_day_config (si se desea hacer)
-  if (per_day_config && typeof per_day_config !== 'object') {
-    return res.status(400).json({ error: 'Formato inválido para per_day_config' });
-  }
+if (per_day_config && typeof per_day_config !== 'object') {
+  return res.status(400).json({ error: 'Formato inválido para per_day_config' });
+}
 
   try {
     const { error } = await supabase
