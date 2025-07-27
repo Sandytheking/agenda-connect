@@ -174,7 +174,7 @@
       const diaActual = dayNames[diaSemana];
 
 const configDia = cfg.per_day_config?.[diaActual];
-if (!configDia || !configDia.activo) return lista;
+if (!configDia || !configDia.enabled) return lista;
 
 const paso = Number(cfg.duration_minutes || 30);
 
