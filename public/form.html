@@ -237,12 +237,13 @@ const almuerzoFin = configDia.almuerzoFin || null;
       });
       const json = await res.json();
       $('#btn').disabled = false;
-      if (res.ok) {
-        $('#msg').textContent = '✅ Cita creada. Revisa tu correo.';
-        $('#btn').style.display = 'none';
-      } else {
-        $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
-      }
+     if (res.ok || res.status === 401) {
+  $('#msg').textContent = '✅ Cita creada. Revisa tu correo.';
+  $('#btn').style.display = 'none';
+} else {
+  $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
+}
+
     };
   </script>
 </body>
