@@ -46,6 +46,14 @@ router.post('/:slug/crear-cita', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
+const checkAvailabilityRes = await fetch(`https://api.agenda-connect.com/api/availability/${slug}?date=${date}&time=${time}`);
+const check = await checkAvailabilityRes.json();
+
+if (!check.available) {
+  return res.status(409).json({ error: check.message || 'Horario no disponible' });
+}
+
+
   try {
     const config = await getConfigBySlug(slug);
     if (!config) {
