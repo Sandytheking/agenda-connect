@@ -33,21 +33,56 @@ router.post('/:slug/crear-cita', async (req, res) => {
 
     // ⚠️ Si no hay refresh_token, dispara el correo de reconexión
     if (!config.refresh_token || config.refresh_token.trim() === '') {
-      console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);
-      if (config.calendar_email) {
-        try {
-          await sendReconnectEmail({
-            to: config.calendar_email,
-            nombre: config.nombre || slug,
-            slug
-          });
-          console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
-        } catch (mailErr) {
-          console.error("❌ Error al enviar correo de reconexión:", mailErr);
-        }
-      }
-      return res.status(401).json({ error: 'Cuenta de Google no conectada. Se ha enviado un correo para reconectar.' });
+  console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);
+
+  // ⏱️ Construir fecha/hora
+  const timezone = (config.timezone || 'America/Santo_Domingo').replace(/^['"]|['"]$/g, '');
+  const startDT = getDateTimeFromStrings(date, time, timezone);
+  const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
+
+  // 📨 Enviar correo de reconexión
+  if (config.calendar_email) {
+    try {
+      await sendReconnectEmail({
+        to: config.calendar_email,
+        nombre: config.nombre || slug,
+        slug
+      });
+      console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
+    } catch (mailErr) {
+      console.error("❌ Error al enviar correo de reconexión:", mailErr);
     }
+  }
+
+  // 🗂️ Guardar la cita localmente en Supabase sin Google Calendar
+  try {
+    const { error } = await supabase.from('appointments').insert([{
+      slug,
+      nombre: name,
+      email,
+      telefono: phone,
+      fecha: startDT.toISODate(),
+      hora: startDT.toFormat('HH:mm'),
+      inicio: startDT.toISO(),
+      fin: endDT.toISO(),
+      evento_id: null,
+      creado_en_google: false
+    }]);
+
+    if (error) {
+      console.error("❌ Error al guardar cita en Supabase (sin Google):", error.message);
+    } else {
+      console.log("✅ Cita guardada en Supabase sin Google correctamente");
+    }
+
+    return res.status(200).json({ success: true, local: true });
+
+  } catch (err) {
+    console.error("❌ Error inesperado al guardar localmente en Supabase:", err.message);
+    return res.status(500).json({ error: 'No se pudo guardar la cita localmente' });
+  }
+}
+
 
    // ✅ Asegura que timezone esté limpio sin comillas extras
 const timezone = (config.timezone || 'America/Santo_Domingo').replace(/^['"]|['"]$/g, '');
