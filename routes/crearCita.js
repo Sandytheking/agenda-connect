@@ -46,23 +46,26 @@ router.post('/:slug/crear-cita', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
-const checkAvailabilityRes = await fetch(`https://api.agenda-connect.com/api/availability/${slug}?date=${date}&time=${time}`);
-const check = await checkAvailabilityRes.json();
-
-if (!check.available) {
-  return res.status(409).json({ error: check.message || 'Horario no disponible' });
-}
 
 
-  try {
-    const config = await getConfigBySlug(slug);
-    if (!config) {
-      return res.status(404).json({ error: 'Negocio no encontrado' });
-    }
+try {
+  const config = await getConfigBySlug(slug);
+  if (!config) {
+    return res.status(404).json({ error: 'Negocio no encontrado' });
+  }
 
-    const timezone = (config.timezone || 'America/Santo_Domingo').replace(/^['"]|['"]$/g, '');
-    const startDT = getDateTimeFromStrings(date, time, timezone);
-    const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
+  // ✅ Verificar disponibilidad ANTES de crear la cita
+  const disponibilidad = await fetch(`https://api.agenda-connect.com/api/availability/${slug}?date=${date}&time=${time}`);
+  const resultado = await disponibilidad.json();
+  if (!resultado.available) {
+    return res.status(409).json({ error: resultado.message || 'Horario no disponible' });
+  }
+
+  // 🕒 Construir zona horaria y tiempo
+  const timezone = (config.timezone || 'America/Santo_Domingo').replace(/^['"]|['"]$/g, '');
+  const startDT = getDateTimeFromStrings(date, time, timezone);
+  const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
+
 
     // 📨 Si no hay refresh_token, guardar local y enviar correo
     if (!config.refresh_token || config.refresh_token.trim() === '') {
