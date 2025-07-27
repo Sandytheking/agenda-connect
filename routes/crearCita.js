@@ -87,8 +87,59 @@ router.post('/:slug/crear-cita', async (req, res) => {
    // ✅ Asegura que timezone esté limpio sin comillas extras
 const timezone = (config.timezone || 'America/Santo_Domingo').replace(/^['"]|['"]$/g, '');
 
-// 🔑 Obtener token de acceso válido desde el refresh_token
-const accessToken = await getAccessToken(config.refresh_token, slug);
+
+let accessToken;
+try {
+  accessToken = await getAccessToken(config.refresh_token, slug);
+} catch (err) {
+  console.error("❌ Token vencido o inválido:", err.message);
+
+  // 📨 Dispara correo si calendar_email está presente
+  if (config.calendar_email) {
+    try {
+      await sendReconnectEmail({
+        to: config.calendar_email,
+        nombre: config.nombre || slug,
+        slug
+      });
+      console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
+    } catch (mailErr) {
+      console.error("❌ Error al enviar correo de reconexión:", mailErr);
+    }
+  }
+
+  // 🗂 Guarda cita localmente aunque falle Google
+  const startDT = getDateTimeFromStrings(date, time, (config.timezone || 'America/Santo_Domingo'));
+  const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
+
+  try {
+    const { error } = await supabase.from('appointments').insert([{
+      slug,
+      nombre: name,
+      email,
+      telefono: phone,
+      fecha: startDT.toISODate(),
+      hora: startDT.toFormat('HH:mm'),
+      inicio: startDT.toISO(),
+      fin: endDT.toISO(),
+      evento_id: null,
+      creado_en_google: false
+    }]);
+
+    if (error) {
+      console.error("❌ Error al guardar cita en Supabase (token inválido):", error.message);
+    } else {
+      console.log("✅ Cita guardada en Supabase sin Google (token inválido)");
+    }
+
+    return res.status(200).json({ success: true, local: true });
+
+  } catch (err) {
+    console.error("❌ Error inesperado al guardar localmente:", err.message);
+    return res.status(500).json({ error: 'No se pudo guardar la cita localmente' });
+  }
+}
+
 
 // 🕒 Construir fecha y hora con zona horaria limpia
 const startDT = getDateTimeFromStrings(date, time, timezone);
