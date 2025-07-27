@@ -166,6 +166,9 @@
     })();
 
     function generarSlots(fechaISO) {
+      console.log('📆 Día:', diaActual);
+console.log('🔧 Configuración del día:', configDia);
+
       const lista = [];
       const [y, m, d] = fechaISO.split('-').map(Number);
       const fecha = new Date(y, m - 1, d, 12);
@@ -189,6 +192,9 @@ const almuerzoFin = configDia.almuerzoFin || null;
       const cur = new Date(desde);
 
       while (cur < hasta) {
+        
+      if (!estaEnAlmuerzo) console.log('✅ Slot agregado:', horaActual);
+
         const HH = String(cur.getHours()).padStart(2, '0');
         const MM = String(cur.getMinutes()).padStart(2, '0');
         const horaActual = `${HH}:${MM}`;
