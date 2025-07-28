@@ -88,7 +88,7 @@ router.get('/api/oauth/callback', async (req, res) => {
       return res.status(500).send("Error al guardar los tokens.");
     }
 
-    res.redirect("https://www.agenda-connect.com/admin");
+    res.redirect("https://www.agenda-connect.com/admin-avanzado");
   } catch (err) {
     console.error("❌ Error en OAuth callback:", err);
     res.status(500).send("Error al conectar cuenta de Google");
