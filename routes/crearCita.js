@@ -7,6 +7,9 @@ import { getDateTimeFromStrings } from '../utils/fechas.js';
 import { sendReconnectEmail } from '../utils/sendReconnectEmail.js';
 import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.js';
 import { createClient } from '@supabase/supabase-js';
+import { sendConfirmationEmail } from '../utils/sendConfirmationEmail.js';
+
+
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -67,50 +70,78 @@ try {
   const endDT = startDT.plus({ minutes: config.duration_minutes || 30 });
 
 
-    // 📨 Si no hay refresh_token, guardar local y enviar correo
-    if (!config.refresh_token || config.refresh_token.trim() === '') {
-      console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);
+   // 📨 Si no hay refresh_token, guardar local y enviar correo
+if (!config.refresh_token || config.refresh_token.trim() === '') {
+  console.warn(`⚠️ No hay refresh_token para ${slug}. Enviando correo de reconexión...`);
 
-      if (config.calendar_email) {
-        try {
-          await sendReconnectEmail({
-            to: config.calendar_email,
-            nombre: config.nombre || slug,
-            slug
-          });
-          console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
-        } catch (mailErr) {
-          console.error("❌ Error al enviar correo de reconexión:", mailErr);
-        }
-      }
-
-      await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
-      return res.status(200).json({ success: true, local: true });
+  if (config.calendar_email) {
+    try {
+      await sendReconnectEmail({
+        to: config.calendar_email,
+        nombre: config.nombre || slug,
+        slug
+      });
+      console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
+    } catch (mailErr) {
+      console.error("❌ Error al enviar correo de reconexión:", mailErr);
     }
+  }
+
+  await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
+
+  await sendConfirmationEmail({
+    to: email,
+    nombre: name,
+    fecha: startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy'),
+    hora: startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a'),
+    negocio: config.nombre || slug,
+    slug
+  });
+
+  return res.status(200).json({ success: true, local: true });
+}
+
+
 
     // 🔐 Intentar obtener access token
-    let accessToken;
+let accessToken;
+try {
+  accessToken = await getAccessToken(config.refresh_token, slug);
+} catch (err) {
+  console.error("❌ Token vencido o inválido:", err.message);
+
+  if (config.calendar_email) {
     try {
-      accessToken = await getAccessToken(config.refresh_token, slug);
-    } catch (err) {
-      console.error("❌ Token vencido o inválido:", err.message);
-
-      if (config.calendar_email) {
-        try {
-          await sendReconnectEmail({
-            to: config.calendar_email,
-            nombre: config.nombre || slug,
-            slug
-          });
-          console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
-        } catch (mailErr) {
-          console.error("❌ Error al enviar correo de reconexión:", mailErr);
-        }
-      }
-
-      await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
-      return res.status(200).json({ success: true, local: true });
+      await sendReconnectEmail({
+        to: config.calendar_email,
+        nombre: config.nombre || slug,
+        slug
+      });
+      console.log(`📧 Correo de reconexión enviado a ${config.calendar_email}`);
+    } catch (mailErr) {
+      console.error("❌ Error al enviar correo de reconexión:", mailErr);
     }
+  }
+
+  // Guardar la cita localmente
+  const exito = await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
+  
+  if (exito) {
+    // Enviar correo de confirmación al cliente con botón de cancelación
+    await sendConfirmationEmail({
+      to: email,
+      nombre: name,
+      fecha: startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy'),
+      hora: startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a'),
+      negocio: config.nombre || slug,
+      slug,
+      cancelToken: generateCancelToken() // esto debe ser único por cita
+    });
+  }
+
+  return res.status(200).json({ success: true, local: true });
+}
+
 
     // 📆 Verificar si hay solapamiento en Google Calendar
     const eventos = await getEventsForDay(accessToken, date);
