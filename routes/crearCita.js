@@ -177,8 +177,9 @@ await guardarCitaEnSupabase({
   startDT,
   endDT,
   evento_id: evento?.data?.id || null,
-  cancel_token
+  cancelToken // ✅ corrige esto
 });
+
 
 
 // ✅ Enviar correo de confirmación con botón de cancelar
