@@ -8,6 +8,8 @@ import { sendReconnectEmail } from '../utils/sendReconnectEmail.js';
 import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.js';
 import { createClient } from '@supabase/supabase-js';
 import { sendConfirmationEmail } from '../utils/sendConfirmationEmail.js';
+import { generateCancelToken } from '../utils/generateCancelToken.js';
+
 
 
 
