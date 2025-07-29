@@ -28,8 +28,8 @@ const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT,
     inicio: startDT.toISO(),
     fin: endDT.toISO(),
     evento_id,
-    creado_en_google: !!evento_id
-    cancel_token: cancelToken,
+    creado_en_google: !!evento_id,
+    cancel_token: cancelToken
   }]);
 
   if (error) {
