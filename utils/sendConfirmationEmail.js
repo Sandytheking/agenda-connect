@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, slug }) {
   try {
     await resend.emails.send({
-      from: 'Agenda Connect <no-responder@agenda-connect.com>',
+      from: 'onboarding@resend.dev',
       to,
       subject: `✅ Cita confirmada en ${negocio}`,
       html: `
