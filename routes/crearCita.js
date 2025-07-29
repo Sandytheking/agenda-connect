@@ -116,18 +116,7 @@ try {
   // Guardar la cita localmente
   const exito = await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
   
-  if (exito) {
-    // Enviar correo de confirmación al cliente con botón de cancelación
-    await sendConfirmationEmail({
-      to: email,
-      nombre: name,
-      fecha: startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy'),
-      hora: startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a'),
-      negocio: config.nombre || slug,
-      slug,
-      cancelToken: generateCancelToken() // esto debe ser único por cita
-    });
-  }
+
 
   return res.status(200).json({ success: true, local: true });
 }
@@ -171,31 +160,39 @@ try {
       }
     });
 
-    // 🗂️ Guardar cita en Supabase con ID de Google
-    await guardarCitaEnSupabase({
-      slug,
-      name,
-      email,
-      phone,
-      startDT,
-      endDT,
-      evento_id: evento?.data?.id || null
-    });
+  // ✅ Generar cancelToken único
+const cancelToken = generateCancelToken();
 
-// ✅ Enviar correo de confirmación
+// ✅ Guardar la cita en Supabase
+await guardarCitaEnSupabase({
+  slug,
+  name,
+  email,
+  phone,
+  startDT,
+  endDT,
+  evento_id: evento?.data?.id || null // puede ser null si no se creó en Google
+  // puedes guardar el cancelToken si deseas validarlo después
+});
+
+// ✅ Enviar correo de confirmación con botón de cancelar
 await sendConfirmationEmail({
-  to: email, 
+  to: email,
   nombre: name,
   fecha: startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy'),
   hora: startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a'),
   negocio: config.nombre || slug,
-  slug
+  slug,
+  cancelToken
 });
 
-console.log(`📧 Enviando correo de confirmación a ${email}`);
+console.log(`📧 Correo de confirmación enviado a ${email}`);
 
+res.status(200).json({
+  success: true,
+  eventId: evento?.data?.id || null
+});
 
-res.json({ success: true, eventId: evento.data.id });
 
 
   } catch (err) {
