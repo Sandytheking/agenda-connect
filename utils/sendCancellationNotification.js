@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function sendCancellationNotification({ to, cliente, fecha, hora, negocio }) {
   try {
     await resend.emails.send({
-      from: 'Agenda Connect <notificaciones@tudominio.com>',
+      from: 'Agenda Connect <notificaciones@agenda-connect.com>',
       to,
       subject: '🗑️ Cita cancelada por el cliente',
       html: `
