@@ -13,11 +13,12 @@ import { generateCancelToken } from '../utils/generateCancelToken.js';
 
 
 
+
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 // ✅ Función reutilizable para guardar la cita
-const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT, evento_id = null }) => {
+const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT, evento_id = null, cancelToken }) => {
   const { error } = await supabase.from('appointments').insert([{
     slug,
     nombre: name,
@@ -175,7 +176,7 @@ await guardarCitaEnSupabase({
   startDT,
   endDT,
   evento_id: evento?.data?.id || null,
-  cancel_token: cancelToken, 
+  cancel_token
 });
 
 
