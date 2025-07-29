@@ -20,7 +20,7 @@ export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, 
     </ul>
     <p>Si necesitas cancelar tu cita, haz clic en el botón siguiente:</p>
     
-  <a href="https://agenda-connect.com/api/cancelar-cita/${cancelToken}"
+  <a href="https://api.agenda-connect.com/api/cancelar-cita/${cancelToken}"
    target="_blank"
    style="display:inline-block; padding:14px 28px; background:#e11d48; color:white; font-size:16px; text-decoration:none; border-radius:8px; font-weight:bold;">
   ❌ Cancelar cita
