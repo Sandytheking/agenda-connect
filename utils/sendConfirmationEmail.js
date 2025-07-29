@@ -18,16 +18,15 @@ export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, 
       <li><strong>⏰ Hora:</strong> ${hora}</li>
       <li><strong>🏢 Negocio:</strong> ${negocio}</li>
     </ul>
+
     <p>Si necesitas cancelar tu cita, haz clic en el botón siguiente:</p>
-    
-  <a href="https://api.agenda-connect.com/api/cancelar-cita/${cancelToken}"
-   target="_blank"
+  <a href="https://api.agenda-connect.com/api/cancelar-cita/${cancelToken}
+  target="_blank"
    style="display:inline-block; padding:14px 28px; background:#e11d48; color:white; font-size:16px; text-decoration:none; border-radius:8px; font-weight:bold;">
   ❌ Cancelar cita
 </a>
 
-
-    <p style="margin-top: 20px; font-size: 0.9em; color: #777;">Gracias por usar Agenda Connect</p>
+<p style="margin-top: 20px; font-size: 0.9em; color: #777;">Gracias por usar Agenda Connect</p>
   </div>
 `,
     });
