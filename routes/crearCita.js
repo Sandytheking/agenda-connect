@@ -194,13 +194,14 @@ try {
 
 // ✅ Enviar correo de confirmación
 await sendConfirmationEmail({
-  to: email,
+  to: email, // ✅ usa la variable correcta
   nombre: name,
   fecha: startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy'),
   hora: startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a'),
   negocio: config.nombre || slug,
   slug
 });
+
 console.log(`📧 Enviando correo de confirmación a ${to}`);
 
 res.json({ success: true, eventId: evento.data.id });
