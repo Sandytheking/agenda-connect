@@ -26,7 +26,6 @@ import validarResetRoute from './routes/validarReset.js';
 import olvideContrasenaRoute from './routes/olvideContrasena.js';
 import analyticsRouter from './routes/analytics.js';
 import availableHoursRouter from './routes/availableHours.js';
-import cancelarCita from './routes/cancelarCita.js';
 import cancelarCitaRoute from './routes/cancelar-cita.js';
 
 
@@ -117,7 +116,6 @@ app.use(validarResetRoute);
 app.use('/api/olvide-contrasena', olvideContrasenaRoute);
 app.use(analyticsRouter);
 app.use('/api', availableHoursRouter);
-app.use(cancelarCita);
 app.use('/api/cancelar-cita', cancelarCitaRoute);
 
 // 👉 Iniciar login con Google
