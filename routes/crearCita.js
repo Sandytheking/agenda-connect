@@ -89,18 +89,8 @@ if (!config.refresh_token || config.refresh_token.trim() === '') {
 
   await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
 
-  await sendConfirmationEmail({
-    to: email,
-    nombre: name,
-    fecha: startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy'),
-    hora: startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a'),
-    negocio: config.nombre || slug,
-    slug
-  });
-
   return res.status(200).json({ success: true, local: true });
 }
-
 
 
     // 🔐 Intentar obtener access token
@@ -194,7 +184,7 @@ try {
 
 // ✅ Enviar correo de confirmación
 await sendConfirmationEmail({
-  to: email, // ✅ usa la variable correcta
+  to: email, 
   nombre: name,
   fecha: startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy'),
   hora: startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a'),
