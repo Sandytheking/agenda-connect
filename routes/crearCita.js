@@ -192,7 +192,8 @@ await sendConfirmationEmail({
   slug
 });
 
-console.log(`📧 Enviando correo de confirmación a ${to}`);
+console.log(`📧 Enviando correo de confirmación a ${email}`);
+
 
 res.json({ success: true, eventId: evento.data.id });
 
