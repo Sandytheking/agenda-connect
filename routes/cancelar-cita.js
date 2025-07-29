@@ -23,10 +23,16 @@ router.get('/:token', async (req, res) => {
   }
 
   // Marcar cita como cancelada en Supabase
-  await supabase
-    .from('appointments')
-    .update({ cancelada: true })
-    .eq('id', cita.id);
+  const { error: updateError } = await supabase
+  .from('appointments')
+  .update({ cancelada: true })
+  .eq('id', cita.id);
+
+if (updateError) {
+  console.error("❌ Error al marcar cita como cancelada:", updateError.message);
+  return res.status(500).send('Error al cancelar la cita: ' + updateError.message);
+}
+
 
   // Obtener configuración del negocio
   const config = await getConfigBySlug(cita.slug);
