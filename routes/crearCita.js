@@ -192,7 +192,19 @@ try {
       evento_id: evento?.data?.id || null
     });
 
-    res.json({ success: true, eventId: evento.data.id });
+// ✅ Enviar correo de confirmación
+await sendConfirmationEmail({
+  to: email,
+  nombre: name,
+  fecha: startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy'),
+  hora: startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a'),
+  negocio: config.nombre || slug,
+  slug
+});
+console.log(`📧 Enviando correo de confirmación a ${to}`);
+
+res.json({ success: true, eventId: evento.data.id });
+
 
   } catch (err) {
     console.error('❌ Error al crear cita:', err);
