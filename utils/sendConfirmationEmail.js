@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, slug }) {
+export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, slug, cancelToken }) {
   try {
     await resend.emails.send({
       from: 'Agenda Connect <no-reply@agenda-connect.com>',
