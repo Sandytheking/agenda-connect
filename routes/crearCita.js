@@ -18,7 +18,7 @@ const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 // ✅ Función reutilizable para guardar la cita
-const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT, evento_id = null, cancelToken }) => {
+const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT, evento_id = null, cancelToken = null }) => {
   const { error } = await supabase.from('appointments').insert([{
     slug,
     nombre: name,
@@ -30,7 +30,7 @@ const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT,
     fin: endDT.toISO(),
     evento_id,
     creado_en_google: !!evento_id,
-    cancel_token: cancelToken
+    cancel_token: cancelToken // 👈 aquí sí usas cancel_token (nombre en Supabase)
   }]);
 
   if (error) {
@@ -41,6 +41,7 @@ const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT,
     return true;
   }
 };
+
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const slug = req.params.slug;
