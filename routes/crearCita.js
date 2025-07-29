@@ -88,9 +88,9 @@ if (!config.refresh_token || config.refresh_token.trim() === '') {
   }
 
   await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
-
   return res.status(200).json({ success: true, local: true });
 }
+
 
 
     // 🔐 Intentar obtener access token
