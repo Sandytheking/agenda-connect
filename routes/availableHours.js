@@ -1,4 +1,4 @@
-//routes/availableHours.js
+// routes/availableHours.js
 
 import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
@@ -25,17 +25,36 @@ router.get('/available-hours/:slug', async (req, res) => {
     const maxPerHour = config.max_per_hour ?? 1;
     const maxPerDay = config.max_per_day ?? 5;
 
-    // Construir rango del día
-    const startOfDay = DateTime.fromISO(date, { zone: timezone }).startOf('day');
-    const endOfDay = startOfDay.plus({ days: 1 });
+    const dayOfWeek = DateTime.fromISO(date, { zone: timezone }).toFormat('EEEE');
+    const perDay = config.per_day_config?.[dayOfWeek];
 
-    // Obtener citas locales desde Supabase
+    if (!perDay || !perDay.enabled) {
+      return res.json({ available_hours: [] }); // Día no habilitado
+    }
+
+    const startStr = perDay.start || '08:00';
+    const endStr = perDay.end || '17:00';
+    const lunchStartStr = perDay.lunch?.start;
+    const lunchEndStr = perDay.lunch?.end;
+
+    const startOfDay = DateTime.fromISO(date, { zone: timezone }).startOf('day');
+    const workStart = DateTime.fromFormat(`${date} ${startStr}`, 'yyyy-MM-dd HH:mm', { zone: timezone });
+    const workEnd = DateTime.fromFormat(`${date} ${endStr}`, 'yyyy-MM-dd HH:mm', { zone: timezone });
+
+    const lunchStart = lunchStartStr
+      ? DateTime.fromFormat(`${date} ${lunchStartStr}`, 'yyyy-MM-dd HH:mm', { zone: timezone })
+      : null;
+    const lunchEnd = lunchEndStr
+      ? DateTime.fromFormat(`${date} ${lunchEndStr}`, 'yyyy-MM-dd HH:mm', { zone: timezone })
+      : null;
+
+    // Obtener citas desde Supabase
     const { data: citas, error } = await supabase
       .from('appointments')
       .select('inicio, fin')
       .eq('slug', slug)
-      .gte('inicio', startOfDay.toISO())
-      .lt('inicio', endOfDay.toISO());
+      .gte('inicio', workStart.toISO())
+      .lt('inicio', workEnd.toISO());
 
     if (error) {
       console.error("❌ Supabase error:", error.message);
@@ -46,15 +65,25 @@ router.get('/available-hours/:slug', async (req, res) => {
       return res.json({ available_hours: [] }); // Día completo
     }
 
-    // Generar slots posibles
+    // Generar slots disponibles
     const horasDisponibles = [];
-    let current = startOfDay.set({ hour: 8, minute: 0 }); // Puedes ajustar desde qué hora comienza el día laboral
-    const end = startOfDay.set({ hour: 18, minute: 0 });  // Hasta qué hora trabaja
+    let current = workStart;
 
-    while (current < end) {
+    while (current.plus({ minutes: duracion }) <= workEnd) {
       const slotStart = current;
       const slotEnd = current.plus({ minutes: duracion });
 
+      // Verificar si el slot está dentro del horario de almuerzo
+      const enAlmuerzo =
+        lunchStart && lunchEnd &&
+        slotStart < lunchEnd && slotEnd > lunchStart;
+
+      if (enAlmuerzo) {
+        current = current.plus({ minutes: duracion });
+        continue;
+      }
+
+      // Verificar si hay solapamiento con citas
       const solapados = citas.filter((cita) => {
         const cStart = DateTime.fromISO(cita.inicio);
         const cEnd = DateTime.fromISO(cita.fin);
