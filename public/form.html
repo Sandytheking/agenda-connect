@@ -206,40 +206,48 @@
 async function cargarHorasDisponibles(fechaISO) {
   $('#time').innerHTML = '<option>Cargando…</option>';
   $('#time').disabled = true;
+  $('#msg').textContent = ''; // limpiar mensaje anterior
 
   try {
     const r = await fetch(`${api}/api/available-hours/${slug}?date=${fechaISO}`);
     const { available_hours } = await r.json();
 
-    // Obtener fecha actual en formato YYYY-MM-DD
     const hoy = new Date();
     const hoyISO = hoy.toISOString().split('T')[0];
 
     let horasFiltradas = available_hours;
 
-    // Si el cliente eligió hoy, filtrar horas pasadas
     if (fechaISO === hoyISO) {
       const ahora = new Date();
-      const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
+      const minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
 
       horasFiltradas = available_hours.filter(horaStr => {
         const [h, m] = horaStr.split(':').map(Number);
-        return h * 60 + m > horaActual;
+        return h * 60 + m > minutosActuales;
       });
     }
 
-    $('#time').innerHTML = horasFiltradas.length
-      ? `<option value=""></option>${horasFiltradas.map(h => `<option value="${h}">${h}</option>`).join('')}`
-      : '<option>No hay horas libres</option>';
+    if (horasFiltradas.length === 0) {
+      $('#time').innerHTML = '<option>No hay horas libres</option>';
+      $('#time').disabled = true;
+      $('#btn').disabled = true;
+      $('#msg').textContent = '⛔ Ya no hay horas disponibles para hoy';
+      return;
+    }
 
-    $('#time').disabled = !horasFiltradas.length;
+    $('#time').innerHTML = `<option value=""></option>${horasFiltradas.map(h => `<option value="${h}">${h}</option>`).join('')}`;
+    $('#time').disabled = false;
+    $('#btn').disabled = false;
 
   } catch (err) {
     console.error('❌ Error al cargar horas disponibles:', err);
     $('#time').innerHTML = '<option>Error al cargar</option>';
     $('#time').disabled = true;
+    $('#btn').disabled = true;
+    $('#msg').textContent = '⛔ Error al cargar las horas';
   }
 }
+
 
 
     $('#btn').onclick = async () => {
