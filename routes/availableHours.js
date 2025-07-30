@@ -1,4 +1,4 @@
-// /routes/availableHours.js
+//routes/availableHours.js
 
 import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
@@ -6,104 +6,74 @@ import { createClient } from '@supabase/supabase-js';
 import { DateTime } from 'luxon';
 
 const router = express.Router();
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-// Autenticación Supabase (usa tu clave secreta del backend, no la pública del frontend)
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+router.get('/available-hours/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { date } = req.query;
 
-router.get('/:slug', async (req, res) => {
-  const { slug } = req.params;
-  const { date } = req.query;
-
-  if (!slug || !date) return res.status(400).json({ error: 'Faltan datos' });
-
-  const fecha = DateTime.fromISO(date.toString(), { zone: 'America/Santo_Domingo' });
-
-  const { data: client, error } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('slug', slug)
-    .single();
-
-  if (error || !client) return res.status(404).json({ error: 'Negocio no encontrado' });
-
-  const dayName = fecha.toFormat('EEEE'); // ej: "Wednesday"
-  const config = client.per_day_config?.[dayName];
-
-  if (!config || !config.enabled) {
-    return res.json({ available_hours: [] });
-  }
-
-  const start = DateTime.fromFormat(config.start, 'HH:mm', { zone: client.timezone });
-  const end = DateTime.fromFormat(config.end, 'HH:mm', { zone: client.timezone });
-  const lunchStart = config.lunch?.start
-    ? DateTime.fromFormat(config.lunch.start, 'HH:mm', { zone: client.timezone })
-    : null;
-  const lunchEnd = config.lunch?.end
-    ? DateTime.fromFormat(config.lunch.end, 'HH:mm', { zone: client.timezone })
-    : null;
-
-  const duration = client.duration_minutes || 60;
-  const maxPerHour = client.max_per_hour || 1;
-  const maxPerDay = client.max_per_day || 999;
-
-  const { data: citasRaw } = await supabase
-    .from('appointments')
-    .select('hora, cancelada')
-    .eq('slug', slug)
-    .eq('fecha', date)
-    .not('cancelada', 'is', true);
-
-  const horaCitas = (citasRaw || []).map(c =>
-    DateTime.fromISO(`${date}T${c.hora}`, { zone: client.timezone }).toISO()
-  );
-
-  let hora = start.set({ year: fecha.year, month: fecha.month, day: fecha.day });
-  const bloques = [];
-
-  while (hora < end) {
-    const fin = hora.plus({ minutes: duration });
-
-    // Excluir si ya pasó (solo si es hoy)
-    if (
-      fecha.hasSame(DateTime.now().setZone(client.timezone), 'day') &&
-      fin < DateTime.now().setZone(client.timezone)
-    ) {
-      hora = hora.plus({ minutes: duration });
-      continue;
+    if (!slug || !date) {
+      return res.status(400).json({ error: 'Faltan parámetros' });
     }
 
-    // Excluir si cae en almuerzo
-    if (
-      lunchStart &&
-      lunchEnd &&
-      (hora < lunchEnd && fin > lunchStart)
-    ) {
-      hora = hora.plus({ minutes: duration });
-      continue;
+    const config = await getConfigBySlug(slug);
+    if (!config) return res.status(404).json({ error: 'Negocio no encontrado' });
+
+    const timezone = config.timezone || 'America/Santo_Domingo';
+    const duracion = config.duration_minutes || 30;
+    const maxPerHour = config.max_per_hour ?? 1;
+    const maxPerDay = config.max_per_day ?? 5;
+
+    // Construir rango del día
+    const startOfDay = DateTime.fromISO(date, { zone: timezone }).startOf('day');
+    const endOfDay = startOfDay.plus({ days: 1 });
+
+    // Obtener citas locales desde Supabase
+    const { data: citas, error } = await supabase
+      .from('appointments')
+      .select('inicio, fin')
+      .eq('slug', slug)
+      .gte('inicio', startOfDay.toISO())
+      .lt('inicio', endOfDay.toISO());
+
+    if (error) {
+      console.error("❌ Supabase error:", error.message);
+      return res.status(500).json({ error: 'Error al consultar citas' });
     }
 
-    // Excluir si supera el máximo por hora
-    const countSameHour = horaCitas.filter(h =>
-      DateTime.fromISO(h, { zone: client.timezone }).toFormat('HH:mm') === hora.toFormat('HH:mm')
-    ).length;
-
-    if (countSameHour >= maxPerHour) {
-      hora = hora.plus({ minutes: duration });
-      continue;
+    if (citas.length >= maxPerDay) {
+      return res.json({ available_hours: [] }); // Día completo
     }
 
-    bloques.push(hora.toFormat('HH:mm'));
-    hora = hora.plus({ minutes: duration });
-  }
+    // Generar slots posibles
+    const horasDisponibles = [];
+    let current = startOfDay.set({ hour: 8, minute: 0 }); // Puedes ajustar desde qué hora comienza el día laboral
+    const end = startOfDay.set({ hour: 18, minute: 0 });  // Hasta qué hora trabaja
 
-  if ((citasRaw || []).length >= maxPerDay) {
-    return res.json({ available_hours: [] });
-  }
+    while (current < end) {
+      const slotStart = current;
+      const slotEnd = current.plus({ minutes: duracion });
 
-  return res.json({ available_hours: bloques });
+      const solapados = citas.filter((cita) => {
+        const cStart = DateTime.fromISO(cita.inicio);
+        const cEnd = DateTime.fromISO(cita.fin);
+        return cStart < slotEnd && slotStart < cEnd;
+      });
+
+      if (solapados.length < maxPerHour) {
+        horasDisponibles.push(slotStart.toFormat('HH:mm'));
+      }
+
+      current = current.plus({ minutes: duracion });
+    }
+
+    res.json({ available_hours: horasDisponibles });
+
+  } catch (err) {
+    console.error("❌ Error en /available-hours:", err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 export default router;
