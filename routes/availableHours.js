@@ -37,7 +37,7 @@ router.get('/available-hours/:slug', async (req, res) => {
     const startOfDay = parsedDate.startOf('day');
     const endOfDay = startOfDay.plus({ days: 1 });
 
-    // Obtener citas locales desde Supabase
+    // Obtener citas existentes desde Supabase
     const { data: citas, error } = await supabase
       .from('appointments')
       .select('inicio, fin')
@@ -54,7 +54,7 @@ router.get('/available-hours/:slug', async (req, res) => {
       return res.json({ available_hours: [] }); // Día completo
     }
 
-    // Convertir horas de trabajo y almuerzo a DateTime
+    // Convertir configuraciones a objetos DateTime
     const [startHour, startMin] = dayConfig.inicio.split(':').map(Number);
     const [endHour, endMin] = dayConfig.fin.split(':').map(Number);
     const [lunchStartHour, lunchStartMin] = dayConfig.almuerzo_inicio.split(':').map(Number);
@@ -65,21 +65,34 @@ router.get('/available-hours/:slug', async (req, res) => {
     const lunchStart = parsedDate.set({ hour: lunchStartHour, minute: lunchStartMin });
     const lunchEnd = parsedDate.set({ hour: lunchEndHour, minute: lunchEndMin });
 
-    // Generar slots posibles
-    const horasDisponibles = [];
+    // Ajustar hora actual si es hoy
+    const ahora = DateTime.now().setZone(timezone);
     let current = workStart;
+
+    if (parsedDate.hasSame(ahora, 'day')) {
+      const siguienteSlot = ahora.plus({ minutes: 1 }).startOf('minute');
+      if (siguienteSlot > workEnd) {
+        return res.json({ available_hours: [] }); // Ya terminó la jornada laboral
+      }
+      if (siguienteSlot > current) {
+        current = siguienteSlot;
+      }
+    }
+
+    // Generar slots disponibles
+    const horasDisponibles = [];
 
     while (current < workEnd) {
       const slotStart = current;
       const slotEnd = current.plus({ minutes: duracion });
 
-      // ❌ Excluir si cae dentro del almuerzo
+      // Excluir slots dentro del almuerzo
       if (slotStart < lunchEnd && slotEnd > lunchStart) {
         current = current.plus({ minutes: duracion });
         continue;
       }
 
-      // Verificar solapamiento
+      // Verificar solapamiento con citas existentes
       const solapados = citas.filter((cita) => {
         const cStart = DateTime.fromISO(cita.inicio);
         const cEnd = DateTime.fromISO(cita.fin);
