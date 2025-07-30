@@ -1,4 +1,4 @@
-//routes/availableHours.js
+// /routes/availableHours.js
 
 import express from 'express';
 import { getConfigBySlug } from '../supabaseClient.js';
@@ -25,8 +25,16 @@ router.get('/available-hours/:slug', async (req, res) => {
     const maxPerHour = config.max_per_hour ?? 1;
     const maxPerDay = config.max_per_day ?? 5;
 
+    const parsedDate = DateTime.fromISO(date, { zone: timezone });
+    const dayOfWeek = parsedDate.toFormat('cccc').toLowerCase(); // "monday"
+
+    const dayConfig = config.per_day_config?.[dayOfWeek];
+    if (!dayConfig || !dayConfig.habilitado) {
+      return res.json({ available_hours: [] }); // Día deshabilitado
+    }
+
     // Construir rango del día
-    const startOfDay = DateTime.fromISO(date, { zone: timezone }).startOf('day');
+    const startOfDay = parsedDate.startOf('day');
     const endOfDay = startOfDay.plus({ days: 1 });
 
     // Obtener citas locales desde Supabase
@@ -46,15 +54,32 @@ router.get('/available-hours/:slug', async (req, res) => {
       return res.json({ available_hours: [] }); // Día completo
     }
 
+    // Convertir horas de trabajo y almuerzo a DateTime
+    const [startHour, startMin] = dayConfig.inicio.split(':').map(Number);
+    const [endHour, endMin] = dayConfig.fin.split(':').map(Number);
+    const [lunchStartHour, lunchStartMin] = dayConfig.almuerzo_inicio.split(':').map(Number);
+    const [lunchEndHour, lunchEndMin] = dayConfig.almuerzo_fin.split(':').map(Number);
+
+    const workStart = parsedDate.set({ hour: startHour, minute: startMin });
+    const workEnd = parsedDate.set({ hour: endHour, minute: endMin });
+    const lunchStart = parsedDate.set({ hour: lunchStartHour, minute: lunchStartMin });
+    const lunchEnd = parsedDate.set({ hour: lunchEndHour, minute: lunchEndMin });
+
     // Generar slots posibles
     const horasDisponibles = [];
-    let current = startOfDay.set({ hour: 8, minute: 0 }); // Puedes ajustar desde qué hora comienza el día laboral
-    const end = startOfDay.set({ hour: 18, minute: 0 });  // Hasta qué hora trabaja
+    let current = workStart;
 
-    while (current < end) {
+    while (current < workEnd) {
       const slotStart = current;
       const slotEnd = current.plus({ minutes: duracion });
 
+      // ❌ Excluir si cae dentro del almuerzo
+      if (slotStart < lunchEnd && slotEnd > lunchStart) {
+        current = current.plus({ minutes: duracion });
+        continue;
+      }
+
+      // Verificar solapamiento
       const solapados = citas.filter((cita) => {
         const cStart = DateTime.fromISO(cita.inicio);
         const cEnd = DateTime.fromISO(cita.fin);
