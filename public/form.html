@@ -174,6 +174,7 @@ async function cargarHorasDisponibles(fechaISO) {
   try {
     const r = await fetch(`${api}/api/available-hours/${slug}?date=${fechaISO}`);
     const { available_hours } = await r.json();
+    console.log('📦 Horas desde backend:', available_hours, 'para', fechaISO);
 
     if (!available_hours || available_hours.length === 0) {
       $('#time').innerHTML = '<option>No hay horas libres</option>';
