@@ -33,9 +33,6 @@ import planRoutes from './routes/plan.js';
 
 
 
-
-
-
 // Cargar variables de entorno
 dotenv.config();
 

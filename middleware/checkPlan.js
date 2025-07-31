@@ -1,5 +1,4 @@
 // middlewares/checkPlan.js
-// ✅ Verificación del plan del cliente
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
