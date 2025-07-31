@@ -1,5 +1,4 @@
 // routes/exportPdf.js
-// routes/exportPDF.js
 import express from 'express';
 import { verifyAuth } from '../middlewares/verifyAuth.js';
 import { checkPlan } from '../middlewares/checkPlan.js';
