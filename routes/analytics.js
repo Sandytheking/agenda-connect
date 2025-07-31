@@ -1,8 +1,8 @@
 // routes/analytics.js
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { checkPlan } from '../middlewares/checkPlan.js';
-import { verifyAuth } from '../middlewares/verifyAuth.js';
+import { checkPlan } from '../middleware/checkPlan.js';
+import { verifyAuth } from '../middleware/verifyAuth.js';
 
 
 const router = express.Router();

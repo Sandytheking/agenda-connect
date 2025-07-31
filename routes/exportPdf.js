@@ -1,7 +1,7 @@
 // routes/exportPdf.js
 import express from 'express';
-import { verifyAuth } from '../middlewares/verifyAuth.js';
-import { checkPlan } from '../middlewares/checkPlan.js';
+import { verifyAuth } from '../middleware/verifyAuth.js';
+import { checkPlan } from '../middleware/checkPlan.js';
 
 const router = express.Router();
 

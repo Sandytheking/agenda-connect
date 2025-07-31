@@ -1,6 +1,6 @@
 // routes/exportExcel.js
 import express from 'express';
-import { checkPlan } from '../middlewares/checkPlan.js';
+import { checkPlan } from '../middleware/checkPlan.js';
 
 const router = express.Router();
 
