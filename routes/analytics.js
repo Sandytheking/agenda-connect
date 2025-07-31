@@ -1,21 +1,40 @@
 // routes/analytics.js
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from '../middlewares/verifyAuth.js';
+import { checkPlan } from '../middlewares/checkPlan.js';
 
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-router.get('/api/analytics/:slug', async (req, res) => {
+router.get('/analytics/:slug', verifyAuth, checkPlan(['pro', 'business']), async (req, res) => {
   const { slug } = req.params;
+  const { desde, hasta } = req.query;
 
-  const { data: citas, error } = await supabase
+  let query = supabase
     .from('appointments')
     .select('id, nombre, email, telefono, inicio, evento_id')
-    .eq('slug', slug);  // ← Asegúrate de guardar `slug` en tu tabla appointments
+    .eq('slug', slug);
+
+  // Si hay filtros de fechas, los aplicamos
+  if (desde) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(desde)) {
+      return res.status(400).json({ error: 'Formato inválido para "desde" (YYYY-MM-DD)' });
+    }
+    query = query.gte('inicio', `${desde}T00:00:00`);
+  }
+
+  if (hasta) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(hasta)) {
+      return res.status(400).json({ error: 'Formato inválido para "hasta" (YYYY-MM-DD)' });
+    }
+    query = query.lte('inicio', `${hasta}T23:59:59`);
+  }
+
+  const { data: citas, error } = await query;
 
   if (error) return res.status(500).json({ error: error.message });
 
-  // Procesar estadísticas
   const stats = {
     total: citas.length,
     porMes: {},
@@ -32,7 +51,6 @@ router.get('/api/analytics/:slug', async (req, res) => {
     stats.clientesFrecuentes[cita.email] = (stats.clientesFrecuentes[cita.email] || 0) + 1;
   }
 
-  // Top 5 clientes frecuentes
   const topClientes = Object.entries(stats.clientesFrecuentes)
     .filter(([_, count]) => count > 1)
     .sort((a, b) => b[1] - a[1])

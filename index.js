@@ -27,6 +27,13 @@ import olvideContrasenaRoute from './routes/olvideContrasena.js';
 import analyticsRouter from './routes/analytics.js';
 import availableHoursRouter from './routes/availableHours.js';
 import cancelarCitaRoute from './routes/cancelar-cita.js';
+import exportPdfRouter from './routes/exportPdf.js';
+import exportExcelRouter from './routes/exportExcel.js';
+import planRoutes from './routes/plan.js';
+
+
+
+
 
 
 // Cargar variables de entorno
@@ -114,9 +121,13 @@ app.use('/api', superadminRoutes);
 app.use('/api/restablecer-contrasena', restablecerContrasena);
 app.use(validarResetRoute);
 app.use('/api/olvide-contrasena', olvideContrasenaRoute);
-app.use(analyticsRouter);
+app.use('/api', analyticsRouter);
 app.use('/api', availableHoursRouter);
 app.use('/api/cancelar-cita', cancelarCitaRoute);
+app.use('/api', exportPdfRouter);
+app.use('/api', exportExcelRouter);
+app.use('/api/plan', planRoutes);
+
 
 // 👉 Iniciar login con Google
 app.get('/auth/google', (req, res) => {
