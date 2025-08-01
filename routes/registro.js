@@ -14,15 +14,18 @@ const supabase = createClient(
 
 router.post('/api/registro', async (req, res) => {
   const {
-    email,
-    password,
-    nombre,
-    slug,
-    plan = "free",
-    accepted_terms = false
-  } = req.body;
+  email,
+  password,
+  nombre,
+  slug,
+  plan,
+  accepted_terms = false
+} = req.body;
+
+const finalPlan = (plan === "pro" || plan === "business") ? plan : "free";
 
 console.log('🟢 Plan recibido desde frontend:', plan);
+console.log('🟢 Plan que se insertará en DB:', finalPlan);
 
   if (!email || !password || !nombre || !slug) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
@@ -71,7 +74,7 @@ console.log('🟢 Plan recibido desde frontend:', plan);
       email,
       nombre,
       slug,
-      plan,
+      plan: finalPlan,
       accepted_terms: !!accepted_terms,
       terms_accepted_at: accepted_terms ? new Date().toISOString() : null,
       max_per_day: 5,
