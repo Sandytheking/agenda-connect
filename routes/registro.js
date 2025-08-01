@@ -5,7 +5,7 @@ import { sendWelcomeEmail } from '../utils/sendWelcomeEmail.js';
 
 
 const router = express.Router();
-const plan = searchParams.get("plan") || "free";
+
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
