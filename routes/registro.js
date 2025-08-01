@@ -69,6 +69,7 @@ router.post('/api/registro', async (req, res) => {
       email,
       nombre,
       slug,
+      plan,
       accepted_terms: !!accepted_terms,
       terms_accepted_at: accepted_terms ? new Date().toISOString() : null,
       max_per_day: 5,
