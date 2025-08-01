@@ -22,6 +22,8 @@ router.post('/api/registro', async (req, res) => {
     accepted_terms = false
   } = req.body;
 
+console.log('🟢 Plan recibido desde frontend:', plan);
+
   if (!email || !password || !nombre || !slug) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
