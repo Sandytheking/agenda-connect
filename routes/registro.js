@@ -2,8 +2,11 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail } from '../utils/sendWelcomeEmail.js';
+import { useSearchParams } from "next/navigation";
 
 const router = express.Router();
+const searchParams = useSearchParams();
+const plan = searchParams.get("plan") || "free";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -16,6 +19,7 @@ router.post('/api/registro', async (req, res) => {
     password,
     nombre,
     slug,
+    plan: plan,
     accepted_terms = false
   } = req.body;
 
