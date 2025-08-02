@@ -21,6 +21,7 @@ export async function getConfigBySlug(slug) {
       timezone,
       refresh_token,
       activo,
+      plan,
       calendar_email
     `)
     .eq('slug', slug)
