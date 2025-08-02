@@ -1,7 +1,7 @@
 //update-plan.js
 
 import express from 'express';
-import { supabase } from '@/lib/supabaseClient.js'; // Ajusta la ruta
+import { supabase } from '.../lib/supabaseClient.js'; // Ajusta la ruta
 
 const router = express.Router();
 
