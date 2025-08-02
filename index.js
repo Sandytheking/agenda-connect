@@ -30,6 +30,7 @@ import cancelarCitaRoute from './routes/cancelar-cita.js';
 import exportPdfRouter from './routes/exportPdf.js';
 import exportExcelRouter from './routes/exportExcel.js';
 import planRoutes from './routes/plan.js';
+import updatePlanRoute from './api/update-plan.js';
 
 
 
@@ -124,6 +125,7 @@ app.use('/api/cancelar-cita', cancelarCitaRoute);
 app.use('/api', exportPdfRouter);
 app.use('/api', exportExcelRouter);
 app.use('/api/plan', planRoutes);
+app.use(updatePlanRoute);
 
 
 // 👉 Iniciar login con Google
