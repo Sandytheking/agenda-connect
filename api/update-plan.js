@@ -1,37 +1,26 @@
-// update-plan.js
+
+// 📁 routes/update-plan.js
 import express from 'express';
 import { supabase } from '../lib/supabaseClient.js';
-import { authenticateUser } from '../middleware/authenticateUser.js';
+import { verifyAuth } from '../middlewares/verifyAuth.js';
 
 const router = express.Router();
 
-router.post('/api/update-plan', authenticateUser, async (req, res) => {
-  const { slug, nuevoPlan } = req.body;
-  const userId = req.user?.id;
+router.post('/api/update-plan', verifyAuth, async (req, res) => {
+  const userId = req.user.id; // viene del token JWT
+  const { nuevoPlan } = req.body;
 
-  if (!slug || !nuevoPlan || !userId) {
-    return res.status(400).json({ error: 'Datos incompletos' });
+  if (!nuevoPlan) {
+    return res.status(400).json({ error: 'Plan no proporcionado' });
   }
 
-  // Validar que el cliente con ese slug pertenece al usuario
-  const { data: cliente, error } = await supabase
-    .from('clients')
-    .select('id')
-    .eq('slug', slug)
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !cliente) {
-    return res.status(403).json({ error: 'No tienes permiso para cambiar este plan' });
-  }
-
-  const { error: updateError } = await supabase
+  const { error } = await supabase
     .from('clients')
     .update({ plan: nuevoPlan })
-    .eq('id', cliente.id);
+    .eq('user_id', userId);
 
-  if (updateError) {
-    console.error('Error al actualizar plan:', updateError.message);
+  if (error) {
+    console.error('Error al actualizar plan:', error.message);
     return res.status(500).json({ error: 'Error al actualizar el plan' });
   }
 
