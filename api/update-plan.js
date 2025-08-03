@@ -1,21 +1,21 @@
 //update-plan.js
 
 import express from 'express';
-import { supabase } from '../lib/supabaseClient.js'; // Ajusta la ruta
+import { supabase } from '../lib/supabaseClient.js';
 
 const router = express.Router();
 
 router.post('/api/update-plan', async (req, res) => {
-  const { userId, nuevoPlan } = req.body;
+  const { slug, nuevoPlan } = req.body;
 
-  if (!userId || !nuevoPlan) {
+  if (!slug || !nuevoPlan) {
     return res.status(400).json({ error: 'Datos incompletos' });
   }
 
   const { error } = await supabase
     .from('clients')
     .update({ plan: nuevoPlan })
-    .eq('user_id', userId);
+    .eq('slug', slug); // <-- usamos slug ahora
 
   if (error) {
     console.error('Error al actualizar plan:', error.message);
