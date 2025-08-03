@@ -61,6 +61,7 @@ router.post('/api/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+console.log("✅ JWT generado:", token);
 
     res.json({
       token,
@@ -72,7 +73,7 @@ router.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
-console.log("✅ JWT generado:", token);
+
 
 
 // 📁 Nuevo endpoint PUT para actualizar días y horas laborales
