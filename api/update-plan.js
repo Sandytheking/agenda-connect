@@ -1,7 +1,7 @@
 // update-plan.js
 import express from 'express';
 import { supabase } from '../lib/supabaseClient.js';
-import { authenticateUser } from '../middlewares/authenticateUser.js';
+import { authenticateUser } from '../middleware/authenticateUser.js';
 
 const router = express.Router();
 
