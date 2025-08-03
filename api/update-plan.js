@@ -2,7 +2,7 @@
 // 📁 routes/update-plan.js
 import express from 'express';
 import { supabase } from '../lib/supabaseClient.js';
-import { verifyAuth } from '../middlewares/verifyAuth.js';
+import { verifyAuth } from '../middleware/verifyAuth.js';
 
 const router = express.Router();
 
