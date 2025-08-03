@@ -1,14 +1,9 @@
 // 📁 middleware/verifyAuth.js
-import { createClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
 
 console.log("🛡️ Middleware verifyAuth ejecutado");
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-export async function verifyAuth(req, res, next) {
+export function verifyAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,12 +12,13 @@ export async function verifyAuth(req, res, next) {
 
   const token = authHeader.split(' ')[1];
 
-  const { data, error } = await supabase.auth.getUser(token);
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  if (error || !data?.user) {
+    // Agregamos el user al request para usarlo en rutas
+    req.user = decoded; // { id, email }
+    next();
+  } catch (error) {
     return res.status(401).json({ error: 'Token inválido o expirado' });
   }
-
-  req.user = data.user; // info: { id, email, ... }
-  next();
 }
