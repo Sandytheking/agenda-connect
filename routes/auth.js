@@ -72,6 +72,7 @@ router.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+console.log("✅ JWT generado:", token);
 
 
 // 📁 Nuevo endpoint PUT para actualizar días y horas laborales
