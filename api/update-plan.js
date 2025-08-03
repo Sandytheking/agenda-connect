@@ -15,7 +15,7 @@ router.post('/api/update-plan', async (req, res) => {
   const { error } = await supabase
     .from('clients')
     .update({ plan: nuevoPlan })
-    .eq('id', userId);
+    .eq('user_id', userId);
 
   if (error) {
     console.error('Error al actualizar plan:', error.message);
