@@ -1,7 +1,8 @@
 // 📁 routes/private-config.js
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { verifyAuth } from '../middleware/verifyAuth.js';
+import { verificarJWT } from '../middleware/verificarJWT.js';
+
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ const supabase = createClient(
 // ─────────────────────────────────────────────────────────────
 // 🔐 GET configuración usando user_id (ruta privada)
 // ─────────────────────────────────────────────────────────────
-router.get('/', verifyAuth, async (req, res) => {
+router.get('/', verificarJWT, async (req, res) => {
   const userId = req.user.id;
 
   try {
@@ -37,7 +38,7 @@ router.get('/', verifyAuth, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // 🔐 PUT configuración usando user_id (ruta privada)
 // ─────────────────────────────────────────────────────────────
-router.put('/', verifyAuth, async (req, res) => {
+router.put('/', verificarJWT, async (req, res) => {
   const userId = req.user.id;
 
   const {
@@ -60,6 +61,10 @@ router.put('/', verifyAuth, async (req, res) => {
   ) {
     return res.status(400).json({ error: 'Faltan campos requeridos o están mal formateados' });
   }
+
+if (res.status === 404) {
+  setError('Tu cuenta no está completamente configurada. Contacta soporte.');
+}
 
   if (!Array.isArray(work_days) || work_days.length === 0) {
     return res.status(400).json({ error: 'Debes indicar al menos un día laborable' });

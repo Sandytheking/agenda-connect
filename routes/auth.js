@@ -1,6 +1,7 @@
 // 📁 routes/auth.js
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
@@ -19,41 +20,59 @@ router.post('/api/login', async (req, res) => {
   }
 
   try {
-    const authRes = await fetch(process.env.SUPABASE_URL + '/auth/v1/token?grant_type=password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY
-      },
-      body: JSON.stringify({ email, password })
-    });
+    // 🔐 Login vía Supabase Auth
+    const authRes = await fetch(
+      process.env.SUPABASE_URL + '/auth/v1/token?grant_type=password',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY
+        },
+        body: JSON.stringify({ email, password })
+      }
+    );
 
     const authData = await authRes.json();
 
     if (!authRes.ok) {
-      return res.status(401).json({ error: authData.error_description || 'Credenciales incorrectas' });
+      return res.status(401).json({
+        error: authData.error_description || 'Credenciales incorrectas'
+      });
     }
 
-    // Obtener el slug del negocio desde Supabase
-    const { data, error } = await supabase
+    // 🔍 Buscar el cliente y su slug + user_id
+    const { data: clientData, error } = await supabase
       .from('clients')
-      .select('slug')
+      .select('slug, user_id')
       .eq('email', email)
       .single();
 
-    if (error || !data) {
+    if (error || !clientData) {
       return res.status(404).json({ error: 'No se encontró negocio para este email' });
     }
 
+    // 🪙 Crear token JWT propio
+    const token = jwt.sign(
+      {
+        id: clientData.user_id,
+        email
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     res.json({
-      access_token: authData.access_token,
-      slug: data.slug
+      token,
+      slug: clientData.slug
     });
+
   } catch (err) {
     console.error('❌ Error al iniciar sesión:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
 
 // 📁 Nuevo endpoint PUT para actualizar días y horas laborales
 router.put('/api/config/:slug', async (req, res) => {
