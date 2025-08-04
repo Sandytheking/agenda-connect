@@ -32,6 +32,7 @@ import exportExcelRouter from './routes/exportExcel.js';
 import planRoutes from './routes/plan.js';
 import updatePlanRoute from './api/update-plan.js';
 import privateConfigRoutes from './routes/private-config.js';
+import userRoute from './routes/user.js';
 
 
 
@@ -128,6 +129,8 @@ app.use('/api', exportExcelRouter);
 app.use('/api/plan', planRoutes);
 app.use(updatePlanRoute);
 app.use('/api/private-config', privateConfigRoutes);
+app.use(userRoute);
+
 
 
 // 👉 Iniciar login con Google
