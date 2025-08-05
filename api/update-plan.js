@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.post('/api/update-plan', verifyAuth, async (req, res) => {
   const { slug, nuevoPlan } = req.body;
+   console.log('🔁 update-plan request body', { slug, nuevoPlan, userId: req.user?.id });
 
   if (!slug || !nuevoPlan) {
     return res.status(400).json({ error: 'Faltan datos (slug o plan)' });
@@ -18,6 +19,8 @@ router.post('/api/update-plan', verifyAuth, async (req, res) => {
     .select('id, user_id')
     .eq('slug', slug)
     .single();
+
+console.log('🔁 cliente fetched', cliente, fetchError);
 
   if (fetchError || !cliente) {
     return res.status(404).json({ error: 'Cliente no encontrado' });
