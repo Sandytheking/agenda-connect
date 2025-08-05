@@ -1,50 +1,48 @@
 // middleware/verifyAuth.js
+import { supabase } from '../lib/supabaseClient.js'; // cliente server-side (SERVICE_ROLE_KEY)
 import jwt from 'jsonwebtoken';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_URL)
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-  : null;
 
 export async function verifyAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('verifyAuth -> no auth header');
-    return res.status(401).json({ error: 'No autorizado: token faltante' });
-  }
-  const token = authHeader.split(' ')[1];
-  console.log('verifyAuth -> token preview:', token ? token.slice(0,10) + '...' : null);
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '').trim();
 
-  // 1) Intentar Supabase
-  if (supabase) {
+    if (!token) {
+      console.log('verifyAuth: token faltante');
+      return res.status(401).json({ error: 'No autorizado: token faltante' });
+    }
+
+    // 1) Intentar validar con Supabase (para access_tokens de Supabase)
     try {
       const { data, error } = await supabase.auth.getUser(token);
       if (!error && data?.user) {
-        req.user = { id: data.user.id, email: data.user.email };
-        console.log('verifyAuth -> verificado via Supabase user.id=', req.user.id);
+        req.user = data.user;
+        // console.log('verifyAuth: validado por Supabase. user id:', data.user.id);
         return next();
-      } else {
-        console.log('verifyAuth -> supabase.getUser no devolvió user, error:', error?.message || 'no-user');
       }
     } catch (err) {
-      console.log('verifyAuth -> supabase.getUser threw:', err.message);
+      // no hacemos nada aquí, seguimos al intento con jwt
+      console.log('verifyAuth: supabase.auth.getUser fallo (continuando):', err?.message || err);
     }
-  }
 
-  // 2) Fallback JWT
-  if (!process.env.JWT_SECRET) {
-    console.error('verifyAuth -> JWT_SECRET faltante');
-    return res.status(500).json({ error: 'Server misconfigured' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('verifyAuth -> jwt.verify success, decoded id=', decoded.id);
-    req.user = { id: decoded.id, email: decoded.email };
-    return next();
+    // 2) Intentar validar token JWT propio firmado por JWT_SECRET
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // decoded debería contener por lo menos { id, email, ... }
+      req.user = {
+        id: decoded.id,
+        email: decoded.email,
+        // añade lo que necesites del decoded
+      };
+      // console.log('verifyAuth: validado por JWT propio. user id:', decoded.id);
+      return next();
+    } catch (err) {
+      console.log('verifyAuth: jwt.verify fallo:', err?.message || err);
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
   } catch (err) {
-    console.warn('verifyAuth -> jwt.verify failed:', err.message);
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+    console.error('verifyAuth: excepción inesperada', err);
+    return res.status(500).json({ error: 'Error verificando token' });
   }
 }
-export default verifyAuth;
+
