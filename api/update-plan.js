@@ -5,7 +5,7 @@ import { verifyAuth } from '../middleware/verifyAuth.js';
 
 const router = express.Router();
 
-router.post('/api/update-plan', verifyAuth, async (req, res) => {
+router.post('/update-plan', verifyAuth, async (req, res) => {
   const { slug, nuevoPlan } = req.body;
 
   if (!slug || !nuevoPlan) {

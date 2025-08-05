@@ -59,6 +59,7 @@ const SCOPES = [
 const app = express();
 
 app.use(cors({
+app.options('*', cors());
   origin: [
     'https://api.agenda-connect.com',
     'https://agenda-connect.com',
@@ -127,7 +128,7 @@ app.use('/api/cancelar-cita', cancelarCitaRoute);
 app.use('/api', exportPdfRouter);
 app.use('/api', exportExcelRouter);
 app.use('/api/plan', planRoutes);
-app.use(updatePlanRoute);
+app.use('/api', updatePlanRoute);
 app.use('/api/private-config', privateConfigRoutes);
 app.use(userRoute);
 
