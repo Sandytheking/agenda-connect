@@ -59,7 +59,6 @@ const SCOPES = [
 const app = express();
 
 app.use(cors({
-app.options('*', cors());
   origin: [
     'https://api.agenda-connect.com',
     'https://agenda-connect.com',
@@ -73,6 +72,7 @@ app.options('*', cors());
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.options('*', cors());
 
 app.use(express.json());
 
