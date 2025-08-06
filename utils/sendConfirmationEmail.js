@@ -8,7 +8,7 @@ export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, 
     await resend.emails.send({
       from: 'Agenda Connect <no-reply@agenda-connect.com>',
       to,
-      subject: `✅ Cita confirmada en ${negocio}`,
+      subject: `✅ Cita confirmada en ${nombre}`,
       html: `
         <div style="font-family: sans-serif; line-height: 1.6; padding: 20px;">
           <h2 style="color: #4c2882;">Hola ${nombre},</h2>
@@ -16,7 +16,7 @@ export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, 
     <ul>
       <li><strong>📅 Fecha:</strong> ${fecha}</li>
       <li><strong>⏰ Hora:</strong> ${hora}</li>
-      <li><strong>🏢 Negocio:</strong> ${negocio}</li>
+      <li><strong>🏢 Negocio:</strong> ${nombre}</li>
     </ul>
 
     <p>Si necesitas cancelar tu cita, haz clic en el botón siguiente:</p>
