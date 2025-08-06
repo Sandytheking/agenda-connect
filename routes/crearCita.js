@@ -96,6 +96,9 @@ router.post('/:slug/crear-cita', async (req, res) => {
         freeLimit: 10,
       });
 
+        // Enviar alerta si está por alcanzar el límite
+  await sendNearLimitEmail({ slug: cliente.slug, total: totalThisMonth + 1, limit });
+
       if (!allowed) {
         return res.status(403).json({
           error: 'Límite alcanzado',
@@ -357,8 +360,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
       console.error('Error guardando cita con evento_id en Supabase:', savedFinal.error);
       return res.status(500).json({ error: 'Error guardando cita' });
     }
-
-await sendNearLimitEmail({ slug, total: totalThisMonth + 1, limit });
 
 
     // 11) Preparar valores legibles para el correo
