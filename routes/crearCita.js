@@ -101,7 +101,7 @@ router.post('/:slug/crear-cita', async (req, res) => {
 
       if (!allowed) {
         return res.status(403).json({
-          error: 'Límite alcanzado',
+          error: 'Límite de citas por mes alcanzado',
           message: `Has alcanzado el límite de ${limit} citas para el plan Free este mes (${totalThisMonth}/${limit}).`,
           totalThisMonth,
           limit,
