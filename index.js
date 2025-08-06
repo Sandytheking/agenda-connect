@@ -33,6 +33,7 @@ import planRoutes from './routes/plan.js';
 import updatePlanRoute from './api/update-plan.js';
 import privateConfigRoutes from './routes/private-config.js';
 import userRoute from './routes/user.js';
+import appointmentsCountRoutes from './routes/appointmentsCount.js';
 
 
 
@@ -131,6 +132,7 @@ app.use('/api/plan', planRoutes);
 app.use('/api', updatePlanRoute);
 app.use('/api/private-config', privateConfigRoutes);
 app.use(userRoute);
+app.use('/api/appointments', appointmentsCountRoutes);
 
 
 
