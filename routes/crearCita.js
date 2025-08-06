@@ -9,15 +9,14 @@ import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.
 import { sendConfirmationEmail } from '../utils/sendConfirmationEmail.js';
 import { generateCancelToken } from '../utils/generateCancelToken.js';
 import { canCreateAppointmentBySlug } from '../utils/checkPlanLimit.js';
-// if your env doesn't provide global fetch, uncomment the following line and install node-fetch
-// import fetch from 'node-fetch';
+// import fetch if needed in older Node: import fetch from 'node-fetch';
 
 const router = express.Router();
-
-// BASE API para llamadas internas (fallback)
 const BASE_API = process.env.BASE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.agenda-connect.com';
 
-// ✅ Función reutilizable para guardar la cita (adaptada a tus columnas)
+/**
+ * Guarda la cita en Supabase. startDT y endDT se esperan como Luxon DateTime o objetos Date.
+ */
 const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT, evento_id = null, cancelToken = null }) => {
   try {
     const payload = {
@@ -52,33 +51,28 @@ const guardarCitaEnSupabase = async ({ slug, name, email, phone, startDT, endDT,
 
 router.post('/:slug/crear-cita', async (req, res) => {
   const slug = req.params.slug;
+  const { name, email, phone, date, time } = req.body;
+
+  if (!name || !email || !date || !time) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios: name, email, date, time' });
+  }
 
   try {
-    // 0) Verificar suscripción activa (si aplica)
+    // 0) Suscripción activa (si aplica)
     try {
       const { valido, mensaje } = await verificarSuscripcionActiva(slug);
-      if (!valido) {
-        console.log(`Suscripción no válida para ${slug}:`, mensaje);
-        return res.status(403).json({ error: mensaje });
-      }
+      if (!valido) return res.status(403).json({ error: mensaje });
     } catch (e) {
       console.warn('verificarSuscripcionActiva falló (continuamos):', e?.message || e);
     }
 
-    // 1) Validar body
-    const { name, email, phone, date, time } = req.body;
-    if (!name || !email || !date || !time) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios: name, email, date, time' });
-    }
-
-    // 2) Obtener config del cliente
+    // 1) Obtener configuración del cliente
     const config = await getConfigBySlug(slug);
     if (!config) {
-      console.warn('getConfigBySlug no encontró config para slug:', slug);
       return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
-    // 3) Obtener plan del cliente (por si getConfigBySlug no incluye plan)
+    // 2) Obtener plan del cliente (asegurar plan)
     const { data: cliente, error: clienteError } = await supabase
       .from('clients')
       .select('slug, plan')
@@ -90,7 +84,7 @@ router.post('/:slug/crear-cita', async (req, res) => {
       return res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
-    // 4) Verificar límite por plan (usando slug)
+    // 3) Verificar límite por plan
     try {
       const { allowed, totalThisMonth, limit } = await canCreateAppointmentBySlug({
         supabase,
@@ -100,7 +94,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
       });
 
       if (!allowed) {
-        console.log(`Límite alcanzado para ${slug}: ${totalThisMonth}/${limit}`);
         return res.status(403).json({
           error: 'Límite alcanzado',
           message: `Has alcanzado el límite de ${limit} citas para el plan Free este mes (${totalThisMonth}/${limit}).`,
@@ -110,36 +103,34 @@ router.post('/:slug/crear-cita', async (req, res) => {
       }
     } catch (err) {
       console.warn('checkPlanLimit falló (permitiendo por defecto):', err);
-      // fallback permisivo: permitimos la creación si el check falla por error
+      // fallback permisivo
     }
 
-    // 5) Comprobar disponibilidad mediante tu endpoint de availability
+    // 4) Verificar disponibilidad contra endpoint
     const availabilityUrl = `${BASE_API.replace(/\/$/, '')}/api/availability/${encodeURIComponent(slug)}?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`;
     console.log('Comprobando disponibilidad en:', availabilityUrl);
-
     const availabilityRes = await fetch(availabilityUrl);
     if (!availabilityRes.ok) {
       const txt = await availabilityRes.text().catch(() => null);
       console.warn('Availability endpoint no-ok:', availabilityRes.status, txt);
       return res.status(500).json({ error: 'Error verificando disponibilidad' });
     }
-
     const availabilityJson = await availabilityRes.json();
     if (!availabilityJson.available) {
-      console.log('Horario no disponible para', slug, date, time);
       return res.status(409).json({ error: availabilityJson.message || 'Horario no disponible' });
     }
 
-    // 6) Construir fechas con timezone de config
+    // 5) Construir fechas (DateTime de Luxon preferido)
     const timezone = (config.timezone || 'America/Santo_Domingo').replace(/^['"]|['"]$/g, '');
-    const startDT = getDateTimeFromStrings(date, time, timezone);
+    const startDT = getDateTimeFromStrings(date, time, timezone); // debe devolver Luxon DateTime u equivalente
     const endDT = startDT.plus ? startDT.plus({ minutes: config.duration_minutes || 30 }) : new Date(new Date(startDT).getTime() + (config.duration_minutes || 30) * 60000);
 
-    // 7) Si no hay refresh_token: guardar local + enviar reconexión/confirmación
+    // Generar cancelToken antes de guardar / enviar email
+    const cancelToken = generateCancelToken();
+
+    // 6) Si no hay refresh_token => guardar local y enviar reconexión + confirmación
     if (!config.refresh_token || config.refresh_token.trim() === '') {
       console.warn(`⚠️ No hay refresh_token para ${slug}. Guardando local y notificando.`);
-
-      const cancelToken = generateCancelToken();
 
       const saved = await guardarCitaEnSupabase({
         slug,
@@ -156,18 +147,36 @@ router.post('/:slug/crear-cita', async (req, res) => {
         return res.status(500).json({ error: 'Error guardando cita' });
       }
 
-      // Intentar enviar confirmación por email
+      // Formatear fecha/hora para el correo (zona negocio)
+      const fechaFormateada = typeof startDT?.toFormat === 'function'
+        ? startDT.setZone(timezone).toFormat('yyyy-MM-dd')
+        : (new Date(startDT)).toISOString().split('T')[0];
+
+      const horaFormateada = typeof startDT?.toFormat === 'function'
+        ? startDT.setZone(timezone).toFormat('hh:mm a')
+        : (new Date(startDT)).toLocaleTimeString();
+
+      // Enviar confirmación
       try {
-        await sendConfirmationEmail({ to: email, nombre: name, slug, fecha: typeof startDT?.toISO === 'function' ? startDT.toISO() : startDT });
+        await sendConfirmationEmail({
+          to: email,
+          nombre: name,
+          fecha: fechaFormateada,
+          hora: horaFormateada,
+          negocio: config.nombre || slug,
+          slug,
+          cancelToken
+        });
+        console.log('📧 Confirmación enviada (fallback local) a', email);
       } catch (e) {
-        console.warn('sendConfirmationEmail falló:', e?.message || e);
+        console.warn('sendConfirmationEmail falló (fallback):', e?.message || e);
       }
 
-      // Intentar enviar reconexión al admin
+      // Enviar reconexión al admin si aplica
       if (config.calendar_email) {
         try {
           await sendReconnectEmail({ to: config.calendar_email, nombre: config.nombre || slug, slug });
-          console.log('Correo reconexión enviado a', config.calendar_email);
+          console.log('📧 Correo reconexión enviado a', config.calendar_email);
         } catch (e) {
           console.warn('sendReconnectEmail falló:', e?.message || e);
         }
@@ -176,7 +185,7 @@ router.post('/:slug/crear-cita', async (req, res) => {
       return res.status(200).json({ success: true, local: true });
     }
 
-    // 8) Intentar obtener access token desde refresh_token
+    // 7) Intentar obtener access token
     let accessToken;
     try {
       accessToken = await getAccessToken(config.refresh_token, slug);
@@ -193,22 +202,57 @@ router.post('/:slug/crear-cita', async (req, res) => {
         }
       }
 
-      // Guardar la cita localmente como fallback
-      const fallbackSaved = await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
+      // Guardar la cita localmente como fallback y enviar confirmación
+      const fallbackSaved = await guardarCitaEnSupabase({
+        slug,
+        name,
+        email,
+        phone,
+        startDT,
+        endDT,
+        evento_id: null,
+        cancelToken
+      });
+
       if (!fallbackSaved.ok) {
         return res.status(500).json({ error: 'Error guardando cita (fallback)' });
       }
+
+      // Formato para email
+      const fechaFormateada = typeof startDT?.toFormat === 'function'
+        ? startDT.setZone(timezone).toFormat('yyyy-MM-dd')
+        : (new Date(startDT)).toISOString().split('T')[0];
+
+      const horaFormateada = typeof startDT?.toFormat === 'function'
+        ? startDT.setZone(timezone).toFormat('hh:mm a')
+        : (new Date(startDT)).toLocaleTimeString();
+
+      try {
+        await sendConfirmationEmail({
+          to: email,
+          nombre: name,
+          fecha: fechaFormateada,
+          hora: horaFormateada,
+          negocio: config.nombre || slug,
+          slug,
+          cancelToken
+        });
+      } catch (e) {
+        console.warn('sendConfirmationEmail fallback failed:', e?.message || e);
+      }
+
       return res.status(200).json({ success: true, local: true });
     }
 
-    // 9) Verificar solapamiento en Google Calendar (usando getEventsForDay)
+    // 8) Comprobar solapamientos en Google Calendar
     try {
-      const eventos = await getEventsForDay(accessToken, date); // espera array de eventos
+      const eventos = await getEventsForDay(accessToken, date);
+      const startJs = typeof startDT?.toJSDate === 'function' ? startDT.toJSDate() : new Date(startDT);
+      const endJs = typeof endDT?.toJSDate === 'function' ? endDT.toJSDate() : new Date(endDT);
+
       const solapados = eventos.filter(ev => {
         const eStart = new Date(ev.start?.dateTime || ev.start?.date);
         const eEnd = new Date(ev.end?.dateTime || ev.end?.date);
-        const startJs = typeof startDT.toJSDate === 'function' ? startDT.toJSDate() : new Date(startDT);
-        const endJs = typeof endDT.toJSDate === 'function' ? endDT.toJSDate() : new Date(endDT);
         return eStart < endJs && startJs < eEnd;
       });
 
@@ -217,10 +261,9 @@ router.post('/:slug/crear-cita', async (req, res) => {
       }
     } catch (err) {
       console.warn('No se pudieron comprobar eventos en Google (continuando):', err);
-      // Continuar: no bloqueamos si la verificación falla
     }
 
-    // 10) Crear evento en Google Calendar
+    // 9) Crear evento en Google Calendar
     let eventoId = null;
     try {
       const oAuth2Client = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
@@ -249,22 +292,53 @@ router.post('/:slug/crear-cita', async (req, res) => {
       console.log('Evento creado en Google Calendar:', eventoId);
     } catch (err) {
       console.error('Error creando evento en Google Calendar:', err);
-      // Podemos decidir aquí si caer al fallback (guardar local) o devolver error.
-      // Elegimos fallback: guardar localmente y notificar.
-      const fallbackSaved2 = await guardarCitaEnSupabase({ slug, name, email, phone, startDT, endDT });
+      // fallback: guardar local y notificar
+      const fallbackSaved2 = await guardarCitaEnSupabase({
+        slug,
+        name,
+        email,
+        phone,
+        startDT,
+        endDT,
+        evento_id: null,
+        cancelToken
+      });
+
       if (!fallbackSaved2.ok) {
         return res.status(500).json({ error: 'Error guardando cita tras fallo Google' });
       }
-      // intentar enviar confirmación y reconexión si aplica
-      try { await sendConfirmationEmail({ to: email, nombre: name, slug, fecha: typeof startDT?.toISO === 'function' ? startDT.toISO() : startDT }); } catch (e) { console.warn('sendConfirmationEmail falló:', e); }
-      if (config.calendar_email) {
-        try { await sendReconnectEmail({ to: config.calendar_email, nombre: config.nombre || slug, slug }); } catch (e) { console.warn('sendReconnectEmail falló:', e); }
+
+      // Formato para email
+      const fechaFormateada = typeof startDT?.toFormat === 'function'
+        ? startDT.setZone(timezone).toFormat('yyyy-MM-dd')
+        : (new Date(startDT)).toISOString().split('T')[0];
+
+      const horaFormateada = typeof startDT?.toFormat === 'function'
+        ? startDT.setZone(timezone).toFormat('hh:mm a')
+        : (new Date(startDT)).toLocaleTimeString();
+
+      try {
+        await sendConfirmationEmail({
+          to: email,
+          nombre: name,
+          fecha: fechaFormateada,
+          hora: horaFormateada,
+          negocio: config.nombre || slug,
+          slug,
+          cancelToken
+        });
+      } catch (e) {
+        console.warn('sendConfirmationEmail after google-fail failed:', e?.message || e);
       }
+
+      if (config.calendar_email) {
+        try { await sendReconnectEmail({ to: config.calendar_email, nombre: config.nombre || slug, slug }); } catch (e) { console.warn('sendReconnectEmail after google-fail failed:', e?.message || e); }
+      }
+
       return res.status(200).json({ success: true, local: true, warning: 'Evento en Google falló, cita guardada localmente' });
     }
 
-    // 11) Generar cancelToken y guardar la cita con evento_id
-    const cancelToken = generateCancelToken();
+    // 10) Guardar cita con evento_id y cancelToken
     const savedFinal = await guardarCitaEnSupabase({
       slug,
       name,
@@ -281,13 +355,22 @@ router.post('/:slug/crear-cita', async (req, res) => {
       return res.status(500).json({ error: 'Error guardando cita' });
     }
 
+    // 11) Preparar valores legibles para el correo
+    const fechaFormateada = typeof startDT?.toFormat === 'function'
+      ? startDT.setZone(timezone).toFormat('yyyy-MM-dd')
+      : (new Date(startDT)).toISOString().split('T')[0];
+
+    const horaFormateada = typeof startDT?.toFormat === 'function'
+      ? startDT.setZone(timezone).toFormat('hh:mm a')
+      : (new Date(startDT)).toLocaleTimeString();
+
     // 12) Enviar correo de confirmación
     try {
       await sendConfirmationEmail({
         to: email,
         nombre: name,
-        fecha: typeof startDT?.setZone === 'function' ? startDT.setZone('America/Santo_Domingo').toFormat('dd/MM/yyyy') : (new Date(startDT)).toLocaleDateString(),
-        hora: typeof startDT?.setZone === 'function' ? startDT.setZone('America/Santo_Domingo').toFormat('hh:mm a') : (new Date(startDT)).toLocaleTimeString(),
+        fecha: fechaFormateada,
+        hora: horaFormateada,
         negocio: config.nombre || slug,
         slug,
         cancelToken
@@ -298,7 +381,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
     }
 
     return res.status(200).json({ success: true, eventId: eventoId });
-
   } catch (err) {
     console.error('❌ Error al crear cita:', err);
     return res.status(500).json({ error: 'No se pudo crear la cita' });
