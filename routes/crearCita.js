@@ -9,6 +9,8 @@ import { verificarSuscripcionActiva } from '../utils/verificarSuscripcionActiva.
 import { sendConfirmationEmail } from '../utils/sendConfirmationEmail.js';
 import { generateCancelToken } from '../utils/generateCancelToken.js';
 import { canCreateAppointmentBySlug } from '../utils/checkPlanLimit.js';
+import { sendNearLimitEmail } from "../utils/sendNearLimitEmail.js";
+
 // import fetch if needed in older Node: import fetch from 'node-fetch';
 
 const router = express.Router();
@@ -56,6 +58,9 @@ router.post('/:slug/crear-cita', async (req, res) => {
   if (!name || !email || !date || !time) {
     return res.status(400).json({ error: 'Faltan campos obligatorios: name, email, date, time' });
   }
+
+await sendNearLimitEmail({ slug, total: totalThisMonth + 1, limit });
+
 
   try {
     // 0) Suscripción activa (si aplica)
