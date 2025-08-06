@@ -59,8 +59,6 @@ router.post('/:slug/crear-cita', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios: name, email, date, time' });
   }
 
-await sendNearLimitEmail({ slug, total: totalThisMonth + 1, limit });
-
 
   try {
     // 0) Suscripción activa (si aplica)
@@ -359,6 +357,9 @@ await sendNearLimitEmail({ slug, total: totalThisMonth + 1, limit });
       console.error('Error guardando cita con evento_id en Supabase:', savedFinal.error);
       return res.status(500).json({ error: 'Error guardando cita' });
     }
+
+await sendNearLimitEmail({ slug, total: totalThisMonth + 1, limit });
+
 
     // 11) Preparar valores legibles para el correo
     const fechaFormateada = typeof startDT?.toFormat === 'function'
