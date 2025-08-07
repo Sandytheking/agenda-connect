@@ -1,5 +1,5 @@
 // 📁 helpers/checkAndSendNearLimitEmail.js
-import { sendNearLimitEmail } from "../emails/sendNearLimitEmail.js";
+import { sendNearLimitEmail } from "../utils/sendNearLimitEmail.js";
 import { supabase } from "../lib/supabaseClient.js";
 import dayjs from "dayjs";
 
