@@ -35,7 +35,7 @@ router.get('/analytics/:slug', verifyAuth, checkPlan(['pro', 'business']), async
   const { data: citas, error } = await query;
 
   if (error) return res.status(500).json({ error: error.message });
-  
+
 const stats = {
   total: citas.length,
   porMes: {},
@@ -89,6 +89,8 @@ res.json({
   porcentajeClientesRecurrentes,
   totalClientesNuevos,
   porcentajeClientesNuevos,
+  clientesRecurrentes,
+  clientesNuevos
 });
 
 });
