@@ -10,6 +10,7 @@ import { sendConfirmationEmail } from '../utils/sendConfirmationEmail.js';
 import { generateCancelToken } from '../utils/generateCancelToken.js';
 import { canCreateAppointmentBySlug } from '../utils/checkPlanLimit.js';
 import { sendNearLimitEmail } from "../utils/sendNearLimitEmail.js";
+import { checkAndSendNearLimitEmail } from "../helpers/checkAndSendNearLimitEmail.js";
 
 // import fetch if needed in older Node: import fetch from 'node-fetch';
 
@@ -95,6 +96,12 @@ router.post('/:slug/crear-cita', async (req, res) => {
         plan: cliente.plan,
         freeLimit: 10,
       });
+
+await checkAndSendNearLimitEmail({
+  slug: cliente.slug,
+  total: totalThisMonth + 1,
+  limit,
+});
 
         // Enviar alerta si está por alcanzar el límite
   await sendNearLimitEmail({ slug: cliente.slug, total: totalThisMonth + 1, limit });
