@@ -35,6 +35,7 @@ router.get('/analytics/:slug', verifyAuth, checkPlan(['pro', 'business']), async
   const { data: citas, error } = await query;
 
   if (error) return res.status(500).json({ error: error.message });
+  
 const stats = {
   total: citas.length,
   porMes: {},
@@ -54,12 +55,29 @@ for (const cita of citas) {
   }
 }
 
-const topClientes = Object.entries(stats.clientesFrecuentes)
-  .filter(([_, count]) => count > 1)
+// Clasificación de clientes
+const clientesRecurrentes = Object.entries(stats.clientesFrecuentes).filter(
+  ([_, count]) => count > 1
+);
+const clientesNuevos = Object.entries(stats.clientesFrecuentes).filter(
+  ([_, count]) => count === 1
+);
+
+// Top 5 recurrentes
+const topClientes = [...clientesRecurrentes]
   .sort((a, b) => b[1] - a[1])
   .slice(0, 5);
 
-const totalClientesRecurrentes = Object.values(stats.clientesFrecuentes).filter(count => count > 1).length;
+const totalClientesRecurrentes = clientesRecurrentes.length;
+const totalClientesNuevos = clientesNuevos.length;
+
+const porcentajeClientesRecurrentes = stats.total > 0
+  ? Number(((totalClientesRecurrentes / Object.keys(stats.clientesFrecuentes).length) * 100).toFixed(2))
+  : 0;
+
+const porcentajeClientesNuevos = stats.total > 0
+  ? Number(((totalClientesNuevos / Object.keys(stats.clientesFrecuentes).length) * 100).toFixed(2))
+  : 0;
 
 res.json({
   totalCitas: stats.total,
@@ -68,7 +86,11 @@ res.json({
   noSincronizadas: stats.noSincronizadas,
   topClientes,
   totalClientesRecurrentes,
+  porcentajeClientesRecurrentes,
+  totalClientesNuevos,
+  porcentajeClientesNuevos,
 });
+
 });
 
 export default router;
