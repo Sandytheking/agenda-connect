@@ -54,56 +54,66 @@ router.get('/analytics/:slug', verifyAuth, checkPlan(['pro', 'business']), async
     }
   }
 
-// Clasificación de clientes
-const clientesRecurrentes = Object.entries(stats.clientesFrecuentes).filter(
-  ([_, count]) => count > 1
-);
-const clientesNuevos = Object.entries(stats.clientesFrecuentes).filter(
-  ([_, count]) => count === 1
-);
+  // Clasificación de clientes
+  const clientesRecurrentes = Object.entries(stats.clientesFrecuentes).filter(
+    ([_, count]) => count > 1
+  );
+  const clientesNuevos = Object.entries(stats.clientesFrecuentes).filter(
+    ([_, count]) => count === 1
+  );
 
-// Obtenemos la fecha de la primera cita para cada cliente nuevo
-const primerCitaPorCliente = {};
-for (const cita of citas) {
-  const clienteID = cita.email || cita.telefono || cita.nombre;
-  if (clienteID && clientesNuevos.some(([email]) => email === clienteID)) {
-    const fechaCita = new Date(cita.inicio);
-    if (!primerCitaPorCliente[clienteID] || fechaCita < new Date(primerCitaPorCliente[clienteID])) {
-      primerCitaPorCliente[clienteID] = cita.inicio;
+  // Obtenemos la fecha de la primera cita para cada cliente nuevo
+  const primerCitaPorCliente = {};
+  for (const cita of citas) {
+    const clienteID = cita.email;
+    if (!clienteID) continue;
+    if (clientesNuevos.some(([email]) => email === clienteID)) {
+      const fechaCita = new Date(cita.inicio);
+      if (!primerCitaPorCliente[clienteID] || fechaCita < new Date(primerCitaPorCliente[clienteID])) {
+        primerCitaPorCliente[clienteID] = cita.inicio;
+      }
     }
   }
-}
 
-// Formateamos clientes nuevos con first_appointment (fecha en formato YYYY-MM-DD)
-const clientesNuevosFormatted = clientesNuevos.map(([email, count]) => ({
-  email,
-  count,
-  first_appointment: primerCitaPorCliente[email]?.slice(0, 10) || null,
-}));
+  // Formateamos clientes nuevos con first_appointment (fecha en formato YYYY-MM-DD)
+  const clientesNuevosFormatted = clientesNuevos.map(([email, count]) => ({
+    email,
+    count,
+    first_appointment: primerCitaPorCliente[email]?.slice(0, 10) || null,
+  }));
 
-// Formatear para frontend: convertir [email, count] => { email, count }
-const clientesRecurrentesFormatted = clientesRecurrentes.map(([email, count]) => ({ email, count }));
+  // Formateamos clientes recurrentes para frontend
+  const clientesRecurrentesFormatted = clientesRecurrentes.map(([email, count]) => ({ email, count }));
 
-// Top 5 recurrentes
-const topClientes = [...clientesRecurrentes]
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 5);
+  // Top 5 recurrentes
+  const topClientes = [...clientesRecurrentes]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
 
-// Luego en la respuesta JSON usa:
-res.json({
-  totalCitas: stats.total,
-  citasPorMes: stats.porMes,
-  sincronizadas: stats.sincronizadas,
-  noSincronizadas: stats.noSincronizadas,
-  topClientes,
-  totalClientesRecurrentes: clientesRecurrentes.length,
-  porcentajeClientesRecurrentes,
-  totalClientesNuevos: clientesNuevos.length,
-  porcentajeClientesNuevos,
-  clientesRecurrentes: clientesRecurrentesFormatted,
-  clientesNuevos: clientesNuevosFormatted,
-});
+  const totalClientesRecurrentes = clientesRecurrentes.length;
+  const totalClientesNuevos = clientesNuevos.length;
 
+  const porcentajeClientesRecurrentes = stats.total > 0
+    ? Number(((totalClientesRecurrentes / Object.keys(stats.clientesFrecuentes).length) * 100).toFixed(2))
+    : 0;
+
+  const porcentajeClientesNuevos = stats.total > 0
+    ? Number(((totalClientesNuevos / Object.keys(stats.clientesFrecuentes).length) * 100).toFixed(2))
+    : 0;
+
+  res.json({
+    totalCitas: stats.total,
+    citasPorMes: stats.porMes,
+    sincronizadas: stats.sincronizadas,
+    noSincronizadas: stats.noSincronizadas,
+    topClientes,
+    totalClientesRecurrentes,
+    porcentajeClientesRecurrentes,
+    totalClientesNuevos,
+    porcentajeClientesNuevos,
+    clientesRecurrentes: clientesRecurrentesFormatted,
+    clientesNuevos: clientesNuevosFormatted
+  });
 });
 
 export default router;
