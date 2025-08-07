@@ -35,35 +35,40 @@ router.get('/analytics/:slug', verifyAuth, checkPlan(['pro', 'business']), async
   const { data: citas, error } = await query;
 
   if (error) return res.status(500).json({ error: error.message });
+const stats = {
+  total: citas.length,
+  porMes: {},
+  sincronizadas: citas.filter(c => c.evento_id).length,
+  noSincronizadas: citas.filter(c => !c.evento_id).length,
+  clientesFrecuentes: {},
+};
 
-  const stats = {
-    total: citas.length,
-    porMes: {},
-    sincronizadas: citas.filter(c => c.evento_id).length,
-    noSincronizadas: citas.filter(c => !c.evento_id).length,
-    clientesFrecuentes: {},
-  };
+for (const cita of citas) {
+  const date = new Date(cita.inicio);
+  const mes = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  stats.porMes[mes] = (stats.porMes[mes] || 0) + 1;
 
-  for (const cita of citas) {
-    const date = new Date(cita.inicio);
-    const mes = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-    stats.porMes[mes] = (stats.porMes[mes] || 0) + 1;
-    stats.clientesFrecuentes[cita.email] = (stats.clientesFrecuentes[cita.email] || 0) + 1;
+  const clienteID = cita.email || cita.telefono || cita.nombre;
+  if (clienteID) {
+    stats.clientesFrecuentes[clienteID] = (stats.clientesFrecuentes[clienteID] || 0) + 1;
   }
+}
 
-  const topClientes = Object.entries(stats.clientesFrecuentes)
-    .filter(([_, count]) => count > 1)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+const topClientes = Object.entries(stats.clientesFrecuentes)
+  .filter(([_, count]) => count > 1)
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 5);
 
-  res.json({
-    totalCitas: stats.total,
-    citasPorMes: stats.porMes,
-    sincronizadas: stats.sincronizadas,
-    noSincronizadas: stats.noSincronizadas,
-    topClientes,
-  });
+const totalClientesRecurrentes = Object.values(stats.clientesFrecuentes).filter(count => count > 1).length;
+
+res.json({
+  totalCitas: stats.total,
+  citasPorMes: stats.porMes,
+  sincronizadas: stats.sincronizadas,
+  noSincronizadas: stats.noSincronizadas,
+  topClientes,
+  totalClientesRecurrentes,
+});
 });
 
 export default router;
