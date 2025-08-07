@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 import { checkPlan } from '../middleware/checkPlan.js';
 import { verifyAuth } from '../middleware/verifyAuth.js';
 
-
 const router = express.Router();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -36,24 +35,24 @@ router.get('/analytics/:slug', verifyAuth, checkPlan(['pro', 'business']), async
 
   if (error) return res.status(500).json({ error: error.message });
 
-const stats = {
-  total: citas.length,
-  porMes: {},
-  sincronizadas: citas.filter(c => c.evento_id).length,
-  noSincronizadas: citas.filter(c => !c.evento_id).length,
-  clientesFrecuentes: {},
-};
+  const stats = {
+    total: citas.length,
+    porMes: {},
+    sincronizadas: citas.filter(c => c.evento_id).length,
+    noSincronizadas: citas.filter(c => !c.evento_id).length,
+    clientesFrecuentes: {},
+  };
 
-for (const cita of citas) {
-  const date = new Date(cita.inicio);
-  const mes = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-  stats.porMes[mes] = (stats.porMes[mes] || 0) + 1;
+  for (const cita of citas) {
+    const date = new Date(cita.inicio);
+    const mes = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    stats.porMes[mes] = (stats.porMes[mes] || 0) + 1;
 
-  const clienteID = cita.email || cita.telefono || cita.nombre;
-  if (clienteID) {
-    stats.clientesFrecuentes[clienteID] = (stats.clientesFrecuentes[clienteID] || 0) + 1;
+    const clienteID = cita.email || cita.telefono || cita.nombre;
+    if (clienteID) {
+      stats.clientesFrecuentes[clienteID] = (stats.clientesFrecuentes[clienteID] || 0) + 1;
+    }
   }
-}
 
 // Clasificación de clientes
 const clientesRecurrentes = Object.entries(stats.clientesFrecuentes).filter(
@@ -63,34 +62,46 @@ const clientesNuevos = Object.entries(stats.clientesFrecuentes).filter(
   ([_, count]) => count === 1
 );
 
+// Obtenemos la fecha de la primera cita para cada cliente nuevo
+const primerCitaPorCliente = {};
+for (const cita of citas) {
+  const clienteID = cita.email || cita.telefono || cita.nombre;
+  if (clienteID && clientesNuevos.some(([email]) => email === clienteID)) {
+    const fechaCita = new Date(cita.inicio);
+    if (!primerCitaPorCliente[clienteID] || fechaCita < new Date(primerCitaPorCliente[clienteID])) {
+      primerCitaPorCliente[clienteID] = cita.inicio;
+    }
+  }
+}
+
+// Formateamos clientes nuevos con first_appointment (fecha en formato YYYY-MM-DD)
+const clientesNuevosFormatted = clientesNuevos.map(([email, count]) => ({
+  email,
+  count,
+  first_appointment: primerCitaPorCliente[email]?.slice(0, 10) || null,
+}));
+
+// Formatear para frontend: convertir [email, count] => { email, count }
+const clientesRecurrentesFormatted = clientesRecurrentes.map(([email, count]) => ({ email, count }));
+
 // Top 5 recurrentes
 const topClientes = [...clientesRecurrentes]
   .sort((a, b) => b[1] - a[1])
   .slice(0, 5);
 
-const totalClientesRecurrentes = clientesRecurrentes.length;
-const totalClientesNuevos = clientesNuevos.length;
-
-const porcentajeClientesRecurrentes = stats.total > 0
-  ? Number(((totalClientesRecurrentes / Object.keys(stats.clientesFrecuentes).length) * 100).toFixed(2))
-  : 0;
-
-const porcentajeClientesNuevos = stats.total > 0
-  ? Number(((totalClientesNuevos / Object.keys(stats.clientesFrecuentes).length) * 100).toFixed(2))
-  : 0;
-
+// Luego en la respuesta JSON usa:
 res.json({
   totalCitas: stats.total,
   citasPorMes: stats.porMes,
   sincronizadas: stats.sincronizadas,
   noSincronizadas: stats.noSincronizadas,
   topClientes,
-  totalClientesRecurrentes,
+  totalClientesRecurrentes: clientesRecurrentes.length,
   porcentajeClientesRecurrentes,
-  totalClientesNuevos,
+  totalClientesNuevos: clientesNuevos.length,
   porcentajeClientesNuevos,
-  clientesRecurrentes,
-  clientesNuevos
+  clientesRecurrentes: clientesRecurrentesFormatted,
+  clientesNuevos: clientesNuevosFormatted,
 });
 
 });
