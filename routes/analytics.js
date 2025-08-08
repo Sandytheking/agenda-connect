@@ -151,8 +151,8 @@ res.json({
   totalClientesNuevos,
   porcentajeClientesNuevos,
   clientesRecurrentes: clientesRecurrentesFormatted,
-  clientesNuevos: clientesNuevosFormatted
-  citasPorDia,
+  clientesNuevos: clientesNuevosFormatted,
+  citasPorDia
 
 });
 
