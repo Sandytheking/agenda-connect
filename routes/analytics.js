@@ -125,7 +125,6 @@ const clientesNuevosFormatted = clientesNuevos.map(([email, count]) => ({
 const clientesRecurrentesFormatted = clientesRecurrentes.map(([email, count]) => ({
   email,
   count,
-  first_appointment: primerCitaPorCliente[email]?.slice(0, 10) || null,
   nombre: nombrePorCliente[email] || '',
 }));
 
