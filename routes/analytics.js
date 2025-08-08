@@ -72,18 +72,19 @@ for (const cita of citas) {
   const clienteID = cita.email;
   if (!clienteID) continue;
 
-  // Si es cliente nuevo
-  if (clientesNuevos.some(([email]) => email === clienteID)) {
-    const fechaCita = new Date(cita.inicio);
-    if (!primerCitaPorCliente[clienteID] || fechaCita < new Date(primerCitaPorCliente[clienteID])) {
-      primerCitaPorCliente[clienteID] = cita.inicio;
-    }
-    // Guardar nombre del cliente (tomamos el primero que encontremos)
-    if (!nombrePorCliente[clienteID] && cita.nombre) {
-      nombrePorCliente[clienteID] = cita.nombre;
-    }
+  const fechaCita = new Date(cita.inicio);
+
+  // Guardar la primera cita de cada cliente
+  if (!primerCitaPorCliente[clienteID] || fechaCita < new Date(primerCitaPorCliente[clienteID])) {
+    primerCitaPorCliente[clienteID] = cita.inicio;
+  }
+
+  // Guardar nombre si no está ya
+  if (!nombrePorCliente[clienteID] && cita.nombre) {
+    nombrePorCliente[clienteID] = cita.nombre;
   }
 }
+
 
 // Inicializar conteo de citas por día de la semana
 const citasPorDia = {
@@ -121,7 +122,13 @@ const clientesNuevosFormatted = clientesNuevos.map(([email, count]) => ({
 }));
 
 // Formateamos clientes recurrentes para frontend
-const clientesRecurrentesFormatted = clientesRecurrentes.map(([email, count]) => ({ email, count }));
+const clientesRecurrentesFormatted = clientesRecurrentes.map(([email, count]) => ({
+  email,
+  count,
+  first_appointment: primerCitaPorCliente[email]?.slice(0, 10) || null,
+  nombre: nombrePorCliente[email] || '',
+}));
+
 
 // Top 5 recurrentes
 const topClientes = [...clientesRecurrentes]
