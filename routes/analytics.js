@@ -85,6 +85,33 @@ for (const cita of citas) {
   }
 }
 
+// Inicializar conteo de citas por día de la semana
+const citasPorDia = {
+  Lunes: 0,
+  Martes: 0,
+  Miércoles: 0,
+  Jueves: 0,
+  Viernes: 0,
+  Sábado: 0,
+  Domingo: 0,
+};
+
+// Contar citas por día
+for (const cita of citas) {
+  const date = new Date(cita.inicio);
+  const diaSemana = date.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+  switch (diaSemana) {
+    case 0: citasPorDia.Domingo++; break;
+    case 1: citasPorDia.Lunes++; break;
+    case 2: citasPorDia.Martes++; break;
+    case 3: citasPorDia.Miércoles++; break;
+    case 4: citasPorDia.Jueves++; break;
+    case 5: citasPorDia.Viernes++; break;
+    case 6: citasPorDia.Sábado++; break;
+  }
+}
+
+
 // Formateamos clientes nuevos con first_appointment y nombre
 const clientesNuevosFormatted = clientesNuevos.map(([email, count]) => ({
   email,
@@ -125,6 +152,8 @@ res.json({
   porcentajeClientesNuevos,
   clientesRecurrentes: clientesRecurrentesFormatted,
   clientesNuevos: clientesNuevosFormatted
+  citasPorDia,
+
 });
 
 });
