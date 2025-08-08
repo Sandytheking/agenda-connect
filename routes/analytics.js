@@ -87,14 +87,13 @@ for (const cita of citas) {
 
 // Inicializar conteo de citas por día de la semana
 const citasPorDia = {
-  Domingo: 0,
   Lunes: 0,
   Martes: 0,
   Miércoles: 0,
   Jueves: 0,
   Viernes: 0,
   Sábado: 0,
-  
+  Domingo: 0,
 };
 
 // Contar citas por día
