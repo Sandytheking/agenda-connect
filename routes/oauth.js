@@ -12,7 +12,6 @@ router.get('/api/oauth/start', (req, res) => {
   const client_id = process.env.GOOGLE_CLIENT_ID;
 
   const scope = [
-    'https://www.googleapis.com/auth/calendar',
     'https://www.googleapis.com/auth/calendar.events',
     'email',
     'https://www.googleapis.com/auth/userinfo.email',
