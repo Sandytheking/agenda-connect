@@ -28,6 +28,12 @@
       color: var(--text);
     }
 
+    /* Animación de entrada */
+    @keyframes fadeSlideUp {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
     .card {
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(12px);
@@ -37,6 +43,7 @@
       max-width: 480px;
       width: 100%;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      animation: fadeSlideUp 0.6s ease-out;
     }
 
     h2#negocio {
@@ -64,15 +71,24 @@
       background: rgba(255, 255, 255, 0.1);
       color: #fff;
       outline: none;
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
+    }
+
+    /* Animación de enfoque */
+    input:focus, select:focus {
+      box-shadow: 0 0 0 3px var(--primary);
+      transform: scale(1.02);
+    }
+
+    /* Corregir opciones del select */
+    select option {
+      background: #1e1e1e;
+      color: #fff;
+      padding: 0.5rem;
     }
 
     input::placeholder {
       color: rgba(255, 255, 255, 0.5);
-    }
-
-    input:focus, select:focus {
-      box-shadow: 0 0 0 2px var(--primary);
     }
 
     button {
@@ -86,12 +102,12 @@
       font-size: 1rem;
       margin-top: 1.5rem;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.1s ease;
+      transition: background 0.2s ease, transform 0.15s ease;
     }
 
     button:hover {
       background: var(--primary-dark);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
 
     #msg {
