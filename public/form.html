@@ -9,30 +9,34 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #0063f7;
-      --bg: #000000;
-      --text: #1a1a1a;
-      --radius: 16px;
+      --primary: #4f8cff;
+      --primary-dark: #3a6fd1;
+      --bg: linear-gradient(135deg, #0f0f0f, #1e1e1e);
+      --text: #f5f5f5;
+      --radius: 18px;
     }
 
     body {
       font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
+      background: var(--bg);
       padding: 2rem;
       margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+      color: var(--text);
     }
 
     .card {
-      background: #fff;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
       padding: 2.5rem;
       border-radius: var(--radius);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
       max-width: 480px;
       width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     h2#negocio {
@@ -41,10 +45,8 @@
       font-family: 'Playfair Display', serif;
       font-size: 2rem;
       font-weight: 700;
-      color: #003366;
+      color: #ffffff;
       text-align: center;
-      text-transform: capitalize;
-      letter-spacing: 0.5px;
     }
 
     label {
@@ -57,16 +59,20 @@
       width: 100%;
       padding: 0.75rem 1rem;
       font-size: 1rem;
-      border: 1px solid #d1d5db;
+      border: none;
       border-radius: var(--radius);
-      background-color: #fff;
-      box-sizing: border-box;
-      transition: border-color 0.2s ease;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
     }
 
     input:focus, select:focus {
-      outline: none;
-      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary);
     }
 
     button {
@@ -80,18 +86,19 @@
       font-size: 1rem;
       margin-top: 1.5rem;
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: background 0.2s ease, transform 0.1s ease;
     }
 
     button:hover {
-      background: #0047c1;
+      background: var(--primary-dark);
+      transform: translateY(-1px);
     }
 
     #msg {
       margin-top: 1rem;
       font-size: 0.95rem;
       text-align: center;
-      color: #444;
+      color: #ddd;
     }
   </style>
 </head>
@@ -99,13 +106,13 @@
   <div class="card">
     <h2 id="negocio">Reservar cita</h2>
     <label>Nombre</label>
-    <input id="name" />
+    <input id="name" placeholder="Tu nombre" />
 
     <label>Email</label>
-    <input id="email" type="email" />
+    <input id="email" type="email" placeholder="correo@ejemplo.com" />
 
     <label>Teléfono</label>
-    <input id="phone" />
+    <input id="phone" placeholder="(000) 000-0000" />
 
     <label>Fecha</label>
     <input id="date" type="date" />
@@ -115,9 +122,9 @@
 
     <button id="btn">Reservar</button>
     <div id="msg"></div>
-    <p style="margin-top: 2rem; font-size: 0.9rem; text-align: center; color: #777;">
+    <p style="margin-top: 2rem; font-size: 0.9rem; text-align: center; color: #aaa;">
       Este sistema de reservas es impulsado por<br>
-      <a href="https://www.agenda-connect.com" target="_blank" style="color: #0063f7; font-weight: bold; text-decoration: none;">
+      <a href="https://www.agenda-connect.com" target="_blank" style="color: #4f8cff; font-weight: bold; text-decoration: none;">
         Agenda Connect
       </a>
     </p>
@@ -165,90 +172,56 @@
       }
     })();
 
-    function generarSlots(fechaISO) {
-  const lista = [];
-  const [y, m, d] = fechaISO.split('-').map(Number);
-  const fecha = new Date(y, m - 1, d, 12);
-  const diaSemana = fecha.getDay();
-
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const diaActual = dayNames[diaSemana];
-
-  const configDia = cfg.per_day_config?.[diaActual];
-  if (!configDia || !configDia.enabled) return lista;
-
-  const paso = Number(cfg.duration_minutes || 30);
-
-  const [sh, sm] = configDia.start.split(':').map(Number);
-  const [eh, em] = configDia.end.split(':').map(Number);
-
-  const almuerzoIni = configDia.lunch?.start || null;
-  const almuerzoFin = configDia.lunch?.end || null;
-
-  const desde = new Date(); desde.setHours(sh, sm, 0, 0);
-  const hasta = new Date(); hasta.setHours(eh, em, 0, 0);
-  const cur = new Date(desde);
-
-  while (cur < hasta) {
-    const HH = String(cur.getHours()).padStart(2, '0');
-    const MM = String(cur.getMinutes()).padStart(2, '0');
-    const horaActual = `${HH}:${MM}`;
-
-    const estaEnAlmuerzo = almuerzoIni && almuerzoFin && horaActual >= almuerzoIni && horaActual < almuerzoFin;
-    if (!estaEnAlmuerzo) lista.push(horaActual);
-
-    cur.setMinutes(cur.getMinutes() + paso);
-  }
-
-  return lista;
-}
-
-async function cargarHorasDisponibles(fechaISO) {
-  $('#time').innerHTML = '<option>Cargando…</option>';
-  $('#time').disabled = true;
-  $('#msg').textContent = ''; // limpiar mensaje anterior
-
-  try {
-    const r = await fetch(`${api}/api/available-hours/${slug}?date=${fechaISO}`);
-    const { available_hours } = await r.json();
-
-    const hoy = new Date();
-    const hoyISO = hoy.toISOString().split('T')[0];
-
-    let horasFiltradas = available_hours;
-
-    if (fechaISO === hoyISO) {
-      const ahora = new Date();
-      const minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
-
-      horasFiltradas = available_hours.filter(horaStr => {
-        const [h, m] = horaStr.split(':').map(Number);
-        return h * 60 + m > minutosActuales;
-      });
+    function formato12h(hora24) {
+      let [h, m] = hora24.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
     }
 
-    if (horasFiltradas.length === 0) {
-      $('#time').innerHTML = '<option>No hay horas libres</option>';
+    async function cargarHorasDisponibles(fechaISO) {
+      $('#time').innerHTML = '<option>Cargando…</option>';
       $('#time').disabled = true;
-      $('#btn').disabled = true;
-      $('#msg').textContent = '⛔ Ya no hay horas disponibles para hoy';
-      return;
+      $('#msg').textContent = '';
+
+      try {
+        const r = await fetch(`${api}/api/available-hours/${slug}?date=${fechaISO}`);
+        const { available_hours } = await r.json();
+
+        const hoy = new Date();
+        const hoyISO = hoy.toISOString().split('T')[0];
+
+        let horasFiltradas = available_hours;
+
+        if (fechaISO === hoyISO) {
+          const ahora = new Date();
+          const minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
+          horasFiltradas = available_hours.filter(horaStr => {
+            const [h, m] = horaStr.split(':').map(Number);
+            return h * 60 + m > minutosActuales;
+          });
+        }
+
+        if (horasFiltradas.length === 0) {
+          $('#time').innerHTML = '<option>No hay horas libres</option>';
+          $('#time').disabled = true;
+          $('#btn').disabled = true;
+          $('#msg').textContent = '⛔ Ya no hay horas disponibles para hoy';
+          return;
+        }
+
+        $('#time').innerHTML = `<option value=""></option>${horasFiltradas.map(h => `<option value="${h}">${formato12h(h)}</option>`).join('')}`;
+        $('#time').disabled = false;
+        $('#btn').disabled = false;
+
+      } catch (err) {
+        console.error('❌ Error al cargar horas disponibles:', err);
+        $('#time').innerHTML = '<option>Error al cargar</option>';
+        $('#time').disabled = true;
+        $('#btn').disabled = true;
+        $('#msg').textContent = '⛔ Error al cargar las horas';
+      }
     }
-
-    $('#time').innerHTML = `<option value=""></option>${horasFiltradas.map(h => `<option value="${h}">${h}</option>`).join('')}`;
-    $('#time').disabled = false;
-    $('#btn').disabled = false;
-
-  } catch (err) {
-    console.error('❌ Error al cargar horas disponibles:', err);
-    $('#time').innerHTML = '<option>Error al cargar</option>';
-    $('#time').disabled = true;
-    $('#btn').disabled = true;
-    $('#msg').textContent = '⛔ Error al cargar las horas';
-  }
-}
-
-
 
     $('#btn').onclick = async () => {
       const name = $('#name').value.trim();
@@ -262,7 +235,6 @@ async function cargarHorasDisponibles(fechaISO) {
       }
       $('#btn').disabled = true;
       $('#msg').textContent = 'Enviando…';
-      console.log('📡 fetch config')
       const res = await fetch(`${api}/api/citas/${slug}/crear-cita`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -270,13 +242,12 @@ async function cargarHorasDisponibles(fechaISO) {
       });
       const json = await res.json();
       $('#btn').disabled = false;
-     if (res.ok || res.status === 401) {
-  $('#msg').textContent = '✅ Cita creada. Revisa tu correo.';
-  $('#btn').style.display = 'none';
-} else {
-  $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
-}
-
+      if (res.ok || res.status === 401) {
+        $('#msg').textContent = '✅ Cita creada. Revisa tu correo.';
+        $('#btn').style.display = 'none';
+      } else {
+        $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
+      }
     };
   </script>
 </body>
