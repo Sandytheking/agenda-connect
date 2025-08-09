@@ -18,32 +18,36 @@ router.get('/api/public-config/:slug', async (req, res) => {
     const { data, error } = await supabase
       .from('clients')
       .select('nombre, work_days, duration_minutes, max_per_day, max_per_hour, timezone, per_day_config')
-
       .eq('slug', slug)
-      .single();
+      .maybeSingle(); // ✅ no rompe si no hay fila
 
-    if (error || !data) {
+    if (error) {
       console.error('❌ Error Supabase:', error);
+      return res.status(500).json({ error: 'Error al consultar la base de datos' });
+    }
+
+    if (!data) {
+      console.warn('⚠️ No se encontró negocio con slug:', slug);
       return res.status(404).json({ error: 'Negocio no encontrado' });
     }
 
-    // Valores con fallback por si vienen null
+    // Valores con fallback
     data.duration_minutes = Number(data.duration_minutes || 30);
     data.max_per_day      = Number(data.max_per_day || 5);
     data.max_per_hour     = Number(data.max_per_hour || 1);
-    //data.start_hour       = data.start_hour || "08:00";
-    //data.end_hour         = data.end_hour   || "17:00";
     data.work_days        = (data.work_days || []).map(String);
-    data.per_day_config   = data.per_day_config || {}; // 🆕 aseguramos estructura
+    data.per_day_config   = data.per_day_config || {};
 
     console.log('✅ work_days convertidos a números:', data.work_days);
     console.log('🔁 per_day_config:', data.per_day_config);
 
     res.json(data);
+
   } catch (e) {
     console.error('❌ /api/public-config error:', e);
     res.status(500).json({ error: 'Error interno' });
   }
 });
+
 
 export default router;
