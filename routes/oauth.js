@@ -1,47 +1,46 @@
-// google-oauth.js
 import express from 'express';
-import axios from 'axios';
-import { supabase } from '../supabaseClient.js';
+import { createClient } from '@supabase/supabase-js';
+import fetch from 'node-fetch';
 
 const router = express.Router();
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-// /oauth
+// 👉 1. Redirige al flujo de autorización
 router.get('/api/oauth/start', (req, res) => {
-  const { user_id } = req.query; // ahora usamos user_id
+  const { slug } = req.query;
   const redirect_uri = 'https://api.agenda-connect.com/api/oauth/callback';
   const client_id = process.env.GOOGLE_CLIENT_ID;
 
   const scope = [
-    'https://www.googleapis.com/auth/calendar',
     'https://www.googleapis.com/auth/calendar.events',
     'email',
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile'
   ].join(' ');
 
-  // pasamos user_id en el state
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${user_id}`;
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${slug}`;
 
   res.redirect(url);
 });
 
+// 👉 2. Callback después del login
 router.get('/api/oauth/callback', async (req, res) => {
-  const { code, state: user_id } = req.query; // ahora el state es el user_id
+  const { code, state: slug } = req.query;
   const redirect_uri = 'https://api.agenda-connect.com/api/oauth/callback';
 
   try {
-    // validar que el user_id existe
+    // 🧪 Validar que el slug existe
     const { data: existingClient, error: clientError } = await supabase
       .from('clients')
       .select('id')
-      .eq('user_id', user_id) // buscamos por user_id
+      .eq('slug', slug)
       .single();
 
     if (clientError || !existingClient) {
       return res.status(400).send("❌ Cliente no encontrado.");
     }
 
-    // pedir token a Google
+    // 🛫 Solicitar tokens a Google
     const response = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -64,23 +63,24 @@ router.get('/api/oauth/callback', async (req, res) => {
     const refreshToken = data.refresh_token;
     const accessToken = data.access_token;
 
-    // obtener email del usuario de Google
+    // 📩 Obtener email del usuario autenticado
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
     const userInfo = await userInfoRes.json();
     const email = userInfo.email;
 
+    // 🧠 Construir objeto de actualización
     const updateData = { calendar_email: email };
     if (refreshToken) {
       updateData.refresh_token = refreshToken;
     }
 
-    // guardar en Supabase
+    // 💾 Guardar en Supabase
     const { error: updateError } = await supabase
       .from('clients')
       .update(updateData)
-      .eq('user_id', user_id); // actualizamos por user_id
+      .eq('slug', slug);
 
     if (updateError) {
       console.error("❌ Error actualizando Supabase:", updateError);
@@ -93,6 +93,5 @@ router.get('/api/oauth/callback', async (req, res) => {
     res.status(500).send("Error al conectar cuenta de Google");
   }
 });
-
 
 export default router;
