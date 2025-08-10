@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const buildConfirmationEmail = (nombre, negocio, fecha, hora, cancelUrl) => {
+const buildConfirmationEmail = (nombre1, nombre, fecha, hora, cancelUrl) => {
   return `
   <!DOCTYPE html>
   <html lang="es">
@@ -60,7 +60,7 @@ const buildConfirmationEmail = (nombre, negocio, fecha, hora, cancelUrl) => {
   `;
 };
 
-export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, slug, cancelToken }) {
+export async function sendConfirmationEmail({ to, nombre, fecha, hora, nombre1, slug, cancelToken }) {
   try {
     // 1️⃣ Email para el cliente
     await resend.emails.send({
@@ -90,12 +90,12 @@ export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, 
       await resend.emails.send({
         from: 'Agenda Connect <no-reply@agenda-connect.com>',
         to: owner.email,
-        subject: `📅 Nueva cita agendada en ${negocio}`,
+        subject: `📅 Nueva cita agendada en ${nombre}`,
         html: `
           <div style="font-family: sans-serif; line-height: 1.6; padding: 20px;">
             <h2 style="color: #4c2882;">Nueva cita agendada</h2>
             <ul>
-              <li><strong>👤 Cliente:</strong> ${nombre}</li>
+              <li><strong>👤 Cliente:</strong> ${nombre1}</li>
               <li><strong>📅 Fecha:</strong> ${fecha}</li>
               <li><strong>⏰ Hora:</strong> ${hora}</li>
             </ul>
