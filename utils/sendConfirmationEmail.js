@@ -9,46 +9,53 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const buildConfirmationEmail = (nombre, negocio, fecha, hora, cancelUrl) => {
+/**
+ * HTML email para el cliente (responsive)
+ */
+const buildConfirmationEmail = (clientName, businessName, appointmentDate, appointmentTime, cancelUrl) => {
   return `
   <!DOCTYPE html>
   <html lang="es">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Confirmación de cita</title>
   </head>
-  <body style="margin:0; padding:0; background-color:#f5f7fa; font-family: Arial, sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f7fa; padding: 30px 0;">
+  <body style="margin:0;padding:0;background:#f5f7fa;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 0;">
       <tr>
         <td align="center">
-          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color:#ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+          <table role="presentation" width="600" style="max-width:600px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.08);">
             <tr>
-              <td style="background-color: #4C2882; padding: 20px; text-align:center;">
-                <h1 style="margin:0; color:#ffffff; font-size: 22px;">${negocio}</h1>
+              <td style="background:#4C2882;padding:20px;text-align:center;color:#fff;">
+                <h1 style="margin:0;font-size:20px;">${escapeHtml(businessName)}</h1>
               </td>
             </tr>
             <tr>
-              <td style="padding: 25px; color:#333333;">
-                <h2 style="margin-top:0; font-size:20px; color:#4C2882;">¡Hola ${nombre}!</h2>
-                <p style="font-size:16px; line-height:1.5; margin-bottom:20px;">
-                  Tu cita ha sido confirmada con <strong>${negocio}</strong>.
-                </p>
-                <p style="font-size:16px; line-height:1.5;">
-                  📅 <strong>Fecha:</strong> ${fecha}<br/>
-                  ⏰ <strong>Hora:</strong> ${hora}
-                </p>
-                <div style="margin-top: 30px; text-align:center;">
-                  <a href="${cancelUrl}" 
-                    style="display:inline-block; background-color:#e53935; color:#ffffff; text-decoration:none; padding: 12px 20px; border-radius:5px; font-size:16px;">
+              <td style="padding:24px;color:#333;">
+                <p style="margin:0 0 12px;">Hola <strong>${escapeHtml(clientName)}</strong>,</p>
+                <p style="margin:0 0 16px;">Tu cita ha sido confirmada con <strong>${escapeHtml(businessName)}</strong>.</p>
+
+                <div style="background:#f3f4f6;padding:12px;border-radius:6px;margin-bottom:18px;">
+                  <p style="margin:0;font-size:15px;"><strong>📅 Fecha:</strong> ${escapeHtml(appointmentDate)}</p>
+                  <p style="margin:6px 0 0;font-size:15px;"><strong>⏰ Hora:</strong> ${escapeHtml(appointmentTime)}</p>
+                </div>
+
+                <div style="text-align:center;margin:18px 0;">
+                  <a href="${cancelUrl}" style="display:inline-block;background:#e11d48;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;">
                     ❌ Cancelar cita
                   </a>
                 </div>
+
+                <p style="margin:10px 0 0;color:#666;font-size:13px;">
+                  Si no puedes ver el botón, copia y pega este enlace en tu navegador:<br/>
+                  <span style="word-break:break-all;color:#4C2882;">${cancelUrl}</span>
+                </p>
               </td>
             </tr>
             <tr>
-              <td style="background-color:#f0f0f0; padding:15px; text-align:center; font-size:12px; color:#888888;">
-                Este es un mensaje automático, por favor no respondas a este correo.
+              <td style="background:#fbfbfb;padding:12px;text-align:center;font-size:12px;color:#888;">
+                Este es un mensaje automático — Agenda Connect
               </td>
             </tr>
           </table>
@@ -60,24 +67,107 @@ const buildConfirmationEmail = (nombre, negocio, fecha, hora, cancelUrl) => {
   `;
 };
 
-export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, slug, cancelToken }) {
+/**
+ * HTML para notificar al dueño del negocio
+ */
+const buildOwnerNotificationEmail = (businessName, clientName, appointmentDate, appointmentTime, adminUrl) => {
+  return `
+  <!DOCTYPE html>
+  <html lang="es">
+  <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+  <body style="margin:0;padding:0;background:#f5f7fa;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" style="max-width:600px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.06);">
+            <tr>
+              <td style="background:#4C2882;padding:16px;color:#fff;text-align:center;">
+                <strong>${escapeHtml(businessName)}</strong>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px;color:#333;">
+                <h3 style="margin:0 0 12px;color:#4C2882;">Nueva cita agendada</h3>
+                <p style="margin:0 0 10px;">Se ha registrado una nueva cita:</p>
+                <ul style="margin:0 0 10px;padding-left:18px;color:#333;">
+                  <li><strong>Cliente:</strong> ${escapeHtml(clientName)}</li>
+                  <li><strong>Fecha:</strong> ${escapeHtml(appointmentDate)}</li>
+                  <li><strong>Hora:</strong> ${escapeHtml(appointmentTime)}</li>
+                </ul>
+                <div style="text-align:center;margin-top:16px;">
+                  <a href="${adminUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600;">
+                    Ver en el panel
+                  </a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#fbfbfb;padding:12px;text-align:center;color:#888;font-size:12px;">
+                Agenda Connect — notificación automática
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `;
+};
+
+/**
+ * Helper para evitar inyección simple en HTML (muy básico)
+ */
+function escapeHtml(str) {
+  if (!str && str !== 0) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Envía confirmación al cliente y notificación al dueño.
+ *
+ * Parámetros compatibles (para no romper llamadas existentes):
+ * - nombre (nombre del cliente) o nombreCliente
+ * - negocio o nombreEmpresa (nombre del negocio)
+ * - to, fecha, hora, slug, cancelToken
+ */
+export async function sendConfirmationEmail({
+  to,
+  nombre,            // nombre del cliente (compatibilidad)
+  nombreCliente,     // alternativa explícita
+  negocio,           // nombre del negocio (compatibilidad)
+  nombreEmpresa,     // alternativa explícita
+  fecha,
+  hora,
+  slug,
+  cancelToken,
+}) {
+  // Resolver nombres preferidos
+  const clientName = nombreCliente || nombre || 'Cliente';
+  const businessName = nombreEmpresa || negocio || slug || 'Negocio';
+
   try {
-    // 1️⃣ Email para el cliente
+    const cancelUrl = `https://api.agenda-connect.com/api/cancelar-cita/${encodeURIComponent(cancelToken || '')}`;
+
+    // 1) Enviar email al cliente
     await resend.emails.send({
       from: 'Agenda Connect <no-reply@agenda-connect.com>',
       to,
-      subject: `✅ Cita confirmada en ${negocio}`,
-      html: buildConfirmationEmail(
-        nombre,
-        negocio,
-        fecha,
-        hora,
-        `https://api.agenda-connect.com/api/cancelar-cita/${cancelToken}`
-      ),
+      subject: `✅ Cita confirmada en ${businessName}`,
+      html: buildConfirmationEmail(clientName, businessName, fecha, hora, cancelUrl),
     });
-    console.log(`📧 Confirmación enviada a ${to}`);
+    console.log(`📧 Confirmación enviada a cliente: ${to}`);
 
-    // 2️⃣ Email para el dueño
+    // 2) Buscar email del dueño (por slug)
+    if (!slug) {
+      console.warn('⚠️ No se envió email al dueño: falta slug.');
+      return;
+    }
+
     const { data: owner, error } = await supabase
       .from('clients')
       .select('email')
@@ -86,30 +176,19 @@ export async function sendConfirmationEmail({ to, nombre, fecha, hora, negocio, 
 
     if (error) {
       console.error('❌ Error obteniendo email del dueño:', error);
-    } else if (owner?.email) {
+    } else if (owner && owner.email) {
+      const adminUrl = `https://www.agenda-connect.com/admin-avanzado`; // Puedes añadir query si necesitas
       await resend.emails.send({
         from: 'Agenda Connect <no-reply@agenda-connect.com>',
         to: owner.email,
-        subject: `📅 Nueva cita agendada en ${negocio}`,
-        html: `
-          <div style="font-family: sans-serif; line-height: 1.6; padding: 20px;">
-            <h2 style="color: #4c2882;">Nueva cita agendada</h2>
-            <ul>
-              <li><strong>👤 Cliente:</strong> ${nombre}</li>
-              <li><strong>📅 Fecha:</strong> ${fecha}</li>
-              <li><strong>⏰ Hora:</strong> ${hora}</li>
-            </ul>
-            <p style="margin-top: 20px; font-size: 0.9em; color: #777;">
-              Puedes revisar más detalles en tu panel de Agenda Connect
-            </p>
-          </div>
-        `,
+        subject: `📅 Nueva cita agendada en ${businessName}`,
+        html: buildOwnerNotificationEmail(businessName, clientName, fecha, hora, adminUrl),
       });
-      console.log(`📧 Notificación enviada al dueño (${owner.email})`);
+      console.log(`📧 Notificación enviada al dueño: ${owner.email}`);
     } else {
-      console.warn(`⚠️ No se encontró email del dueño para el negocio con slug: ${slug}`);
+      console.warn(`⚠️ No se encontró email del dueño para slug: ${slug}`);
     }
-  } catch (error) {
-    console.error("❌ Error al enviar confirmación:", error);
+  } catch (err) {
+    console.error('❌ Error al enviar confirmaciones:', err);
   }
 }
