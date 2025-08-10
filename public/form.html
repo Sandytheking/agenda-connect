@@ -122,7 +122,7 @@
   <div class="card">
     <h2 id="negocio">Reservar cita</h2>
     <label>Nombre</label>
-    <input id="name" placeholder="Tu nombre" />
+    <input id="clientename" placeholder="Tu nombre" />
 
     <label>Email</label>
     <input id="email" type="email" placeholder="correo@ejemplo.com" />
@@ -240,12 +240,12 @@
     }
 
     $('#btn').onclick = async () => {
-      const name = $('#name').value.trim();
+      const clientename = $('#clientename').value.trim();
       const email = $('#email').value.trim();
       const phone = $('#phone').value.trim();
       const date = $('#date').value;
       const time = $('#time').value;
-      if (!name || !email || !date || !time) {
+      if (!clientename || !email || !date || !time) {
         $('#msg').textContent = 'Completa todos los campos';
         return;
       }
@@ -254,7 +254,7 @@
       const res = await fetch(`${api}/api/citas/${slug}/crear-cita`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, date, time })
+        body: JSON.stringify({ clientename, email, phone, date, time })
       });
       const json = await res.json();
       $('#btn').disabled = false;
