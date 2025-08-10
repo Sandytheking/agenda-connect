@@ -25,14 +25,14 @@ const buildConfirmationEmail = (nombre1, nombre, fecha, hora, cancelUrl) => {
           <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color:#ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
             <tr>
               <td style="background-color: #4C2882; padding: 20px; text-align:center;">
-                <h1 style="margin:0; color:#ffffff; font-size: 22px;">${negocio}</h1>
+                <h1 style="margin:0; color:#ffffff; font-size: 22px;">${nombre}</h1>
               </td>
             </tr>
             <tr>
               <td style="padding: 25px; color:#333333;">
                 <h2 style="margin-top:0; font-size:20px; color:#4C2882;">¡Hola ${nombre}!</h2>
                 <p style="font-size:16px; line-height:1.5; margin-bottom:20px;">
-                  Tu cita ha sido confirmada con <strong>${negocio}</strong>.
+                  Tu cita ha sido confirmada con <strong>${nombre}</strong>.
                 </p>
                 <p style="font-size:16px; line-height:1.5;">
                   📅 <strong>Fecha:</strong> ${fecha}<br/>
@@ -66,10 +66,10 @@ export async function sendConfirmationEmail({ to, nombre, fecha, hora, nombre1, 
     await resend.emails.send({
       from: 'Agenda Connect <no-reply@agenda-connect.com>',
       to,
-      subject: `✅ Cita confirmada en ${negocio}`,
+      subject: `✅ Cita confirmada en ${nombre}`,
       html: buildConfirmationEmail(
+        nombre1,
         nombre,
-        negocio,
         fecha,
         hora,
         `https://api.agenda-connect.com/api/cancelar-cita/${cancelToken}`
