@@ -22,7 +22,7 @@ router.get('/api/public-config/:slug', async (req, res) => {
       .maybeSingle(); // ✅ no rompe si no hay fila
 
  // Creamos un alias sin tocar la base de datos
-const businessName = data.nombre; // nombre del negocio
+const businessName = nombre.businessName; // nombre del negocio
 
     if (error) {
       console.error('❌ Error Supabase:', error);
