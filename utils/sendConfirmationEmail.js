@@ -139,22 +139,28 @@ export async function sendConfirmationEmail({
   cancelToken,
 }) {
   const clientName = nombreCliente || nombre || 'Cliente';
-  let businessName = nombreEmpresa || negocio;
+  let businessName = nombreEmpresa || null;
 
-  // ✅ Fallback: si no viene el nombre, buscarlo en BD
-  if (!businessName && slug) {
-    const { data: biz, error: bizError } = await supabase
-      .from('clients')
-      .select('nombre')
-      .eq('slug', slug)
-      .maybeSingle();
+// Si no hay nombreEmpresa, probar con "negocio" solo si no parece ser el slug
+if (!businessName && negocio && negocio !== slug) {
+  businessName = negocio;
+}
 
-    if (!bizError && biz?.nombre) {
-      businessName = biz.nombre;
-    } else {
-      businessName = slug || 'Negocio';
-    }
+// Fallback: buscar en la BD
+if (!businessName && slug) {
+  const { data: biz, error: bizError } = await supabase
+    .from('clients')
+    .select('nombre')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (!bizError && biz?.nombre) {
+    businessName = biz.nombre;
+  } else {
+    businessName = slug || 'Negocio';
   }
+}
+
 
   try {
     const cancelUrl = `https://api.agenda-connect.com/api/cancelar-cita/${encodeURIComponent(cancelToken || '')}`;
