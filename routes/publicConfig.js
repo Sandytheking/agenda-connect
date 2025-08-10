@@ -21,9 +21,6 @@ router.get('/api/public-config/:slug', async (req, res) => {
       .eq('slug', slug)
       .maybeSingle(); // ✅ no rompe si no hay fila
 
- // Creamos un alias sin tocar la base de datos
-const businessName = nombre.businessName; // nombre del negocio
-
     if (error) {
       console.error('❌ Error Supabase:', error);
       return res.status(500).json({ error: 'Error al consultar la base de datos' });
