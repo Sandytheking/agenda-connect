@@ -1,4 +1,4 @@
-// utils/sendConfirmationEmail.js
+// 📁 utils/sendConfirmationEmail.js
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
@@ -10,7 +10,7 @@ const supabase = createClient(
 );
 
 /**
- * HTML email para el cliente (responsive)
+ * HTML email para el cliente
  */
 const buildConfirmationEmail = (clientName, businessName, appointmentDate, appointmentTime, cancelUrl) => {
   return `
@@ -35,18 +35,15 @@ const buildConfirmationEmail = (clientName, businessName, appointmentDate, appoi
               <td style="padding:24px;color:#333;">
                 <p style="margin:0 0 12px;">Hola <strong>${escapeHtml(clientName)}</strong>,</p>
                 <p style="margin:0 0 16px;">Tu cita ha sido confirmada con <strong>${escapeHtml(businessName)}</strong>.</p>
-
                 <div style="background:#f3f4f6;padding:12px;border-radius:6px;margin-bottom:18px;">
                   <p style="margin:0;font-size:15px;"><strong>📅 Fecha:</strong> ${escapeHtml(appointmentDate)}</p>
                   <p style="margin:6px 0 0;font-size:15px;"><strong>⏰ Hora:</strong> ${escapeHtml(appointmentTime)}</p>
                 </div>
-
                 <div style="text-align:center;margin:18px 0;">
                   <a href="${cancelUrl}" style="display:inline-block;background:#e11d48;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;">
                     ❌ Cancelar cita
                   </a>
                 </div>
-
                 <p style="margin:10px 0 0;color:#666;font-size:13px;">
                   Si no puedes ver el botón, copia y pega este enlace en tu navegador:<br/>
                   <span style="word-break:break-all;color:#4C2882;">${cancelUrl}</span>
@@ -116,7 +113,7 @@ const buildOwnerNotificationEmail = (businessName, clientName, appointmentDate, 
 };
 
 /**
- * Helper para evitar inyección simple en HTML (muy básico)
+ * Escapar HTML
  */
 function escapeHtml(str) {
   if (!str && str !== 0) return '';
@@ -128,32 +125,41 @@ function escapeHtml(str) {
 }
 
 /**
- * Envía confirmación al cliente y notificación al dueño.
- *
- * Parámetros compatibles (para no romper llamadas existentes):
- * - nombre (nombre del cliente) o nombreCliente
- * - negocio o nombreEmpresa (nombre del negocio)
- * - to, fecha, hora, slug, cancelToken
+ * Enviar confirmación
  */
 export async function sendConfirmationEmail({
   to,
-  nombre,            // nombre del cliente (compatibilidad)
-  nombreCliente,     // alternativa explícita
-  negocio,           // nombre del negocio (compatibilidad)
-  nombreEmpresa,     // alternativa explícita
+  nombre,            // cliente
+  nombreCliente,
+  negocio,           // opcional
+  nombreEmpresa,     // preferido, viene del public-config
   fecha,
   hora,
   slug,
   cancelToken,
 }) {
-  // Resolver nombres preferidos
   const clientName = nombreCliente || nombre || 'Cliente';
-  const businessName = nombreEmpresa || negocio || slug || 'Negocio';
+  let businessName = nombreEmpresa || negocio;
+
+  // ✅ Fallback: si no viene el nombre, buscarlo en BD
+  if (!businessName && slug) {
+    const { data: biz, error: bizError } = await supabase
+      .from('clients')
+      .select('nombre')
+      .eq('slug', slug)
+      .maybeSingle();
+
+    if (!bizError && biz?.nombre) {
+      businessName = biz.nombre;
+    } else {
+      businessName = slug || 'Negocio';
+    }
+  }
 
   try {
     const cancelUrl = `https://api.agenda-connect.com/api/cancelar-cita/${encodeURIComponent(cancelToken || '')}`;
 
-    // 1) Enviar email al cliente
+    // 1) Email al cliente
     await resend.emails.send({
       from: 'Agenda Connect <no-reply@agenda-connect.com>',
       to,
@@ -162,7 +168,7 @@ export async function sendConfirmationEmail({
     });
     console.log(`📧 Confirmación enviada a cliente: ${to}`);
 
-    // 2) Buscar email del dueño (por slug)
+    // 2) Email al dueño
     if (!slug) {
       console.warn('⚠️ No se envió email al dueño: falta slug.');
       return;
@@ -176,8 +182,8 @@ export async function sendConfirmationEmail({
 
     if (error) {
       console.error('❌ Error obteniendo email del dueño:', error);
-    } else if (owner && owner.email) {
-      const adminUrl = `https://www.agenda-connect.com/admin-avanzado`; // Puedes añadir query si necesitas
+    } else if (owner?.email) {
+      const adminUrl = `https://www.agenda-connect.com/admin-avanzado`;
       await resend.emails.send({
         from: 'Agenda Connect <no-reply@agenda-connect.com>',
         to: owner.email,
