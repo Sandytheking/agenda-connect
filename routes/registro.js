@@ -2,10 +2,9 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { sendWelcomeEmail } from '../utils/sendWelcomeEmail.js';
-
+import { addDays } from 'date-fns';
 
 const router = express.Router();
-
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -14,21 +13,26 @@ const supabase = createClient(
 
 router.post('/api/registro', async (req, res) => {
   const {
-  email,
-  password,
-  nombre,
-  slug,
-  plan,
-  accepted_terms = false
-} = req.body;
+    email,
+    password,
+    nombre,
+    slug,
+    plan,
+    accepted_terms = false
+  } = req.body;
 
-const finalPlan = (plan === "pro" || plan === "business") ? plan : "free";
+  const finalPlan = (plan === "pro" || plan === "business") ? plan : "free";
 
-console.log('🟢 Plan recibido desde frontend:', plan);
-console.log('🟢 Plan que se insertará en DB:', finalPlan);
+  console.log('🟢 Plan recibido desde frontend:', plan);
+  console.log('🟢 Plan que se insertará en DB:', finalPlan);
 
   if (!email || !password || !nombre || !slug) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  }
+
+  // Validar formato de slug (solo minúsculas, números y guiones)
+  if (!/^[a-z0-9-]+$/.test(slug)) {
+    return res.status(400).json({ error: 'El slug solo puede contener minúsculas, números y guiones' });
   }
 
   try {
@@ -68,7 +72,10 @@ console.log('🟢 Plan que se insertará en DB:', finalPlan);
       Sunday:    { activo: false, entrada: '00:00', salida: '00:00', almuerzoInicio: null, almuerzoFin: null },
     };
 
-    // 3. Insertar fila en `clients`
+    // 3. Calcular fecha de vencimiento (+30 días desde registro)
+    const fechaVencimiento = addDays(new Date(), 30);
+
+    // 4. Insertar fila en `clients` con suscripción activa
     const { error: insertError } = await supabase.from('clients').insert({
       user_id: userId,
       email,
@@ -83,7 +90,9 @@ console.log('🟢 Plan que se insertará en DB:', finalPlan);
       start_hour: 8,
       end_hour: 17,
       work_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      per_day_config: defaultPerDayConfig // ← ✅ Agregado aquí
+      per_day_config: defaultPerDayConfig,
+      subscription_valid_until: fechaVencimiento.toISOString(),
+      activo: true
     });
 
     if (insertError) {
@@ -91,9 +100,10 @@ console.log('🟢 Plan que se insertará en DB:', finalPlan);
       return res.status(500).json({ error: 'Usuario creado pero error al guardar configuración' });
     }
 
+    // 5. Enviar correo de bienvenida
     await sendWelcomeEmail({ to: email, name: nombre, slug });
 
-    res.json({ success: true });
+    res.json({ success: true, mensaje: 'Cliente registrado con 30 días de prueba' });
   } catch (err) {
     console.error('❌ Error inesperado en /api/registro:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
