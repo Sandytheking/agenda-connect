@@ -176,7 +176,7 @@ await checkAndSendNearLimitEmail({
           nombre: name,
           fecha: fechaFormateada,
           hora: horaFormateada,
-          nombreEmpresa: config.nombre || slug,
+          nombreEmpresa: config.nombre || null,
           slug,
           cancelToken
         });

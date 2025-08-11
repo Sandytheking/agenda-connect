@@ -139,28 +139,35 @@ export async function sendConfirmationEmail({
   cancelToken,
 }) {
   const clientName = nombreCliente || nombre || 'Cliente';
-  let businessName = nombreEmpresa || null;
+  let businessName = null;
 
-// Si no hay nombreEmpresa, probar con "negocio" solo si no parece ser el slug
-if (!businessName && negocio && negocio !== slug) {
-  businessName = negocio;
-}
-
-// Fallback: buscar en la BD
-if (!businessName && slug) {
-  const { data: biz, error: bizError } = await supabase
-    .from('clients')
-    .select('nombre')
-    .eq('slug', slug)
-    .maybeSingle();
-
-  if (!bizError && biz?.nombre) {
-    businessName = biz.nombre;
-  } else {
-    businessName = slug || 'Negocio';
+  // 1️⃣ Prioridad 1: nombreEmpresa explícito
+  if (nombreEmpresa) {
+    businessName = nombreEmpresa;
   }
-}
 
+  // 2️⃣ Prioridad 2: valor de "negocio" (aunque coincida con slug, por si viene correcto)
+  if (!businessName && negocio) {
+    businessName = negocio;
+  }
+
+  // 3️⃣ Prioridad 3: Buscar siempre en BD por slug
+  if (slug) {
+    const { data: biz, error: bizError } = await supabase
+      .from('clients')
+      .select('nombre')
+      .eq('slug', slug)
+      .maybeSingle();
+
+    if (!bizError && biz?.nombre) {
+      businessName = biz.nombre;
+    }
+  }
+
+  // 4️⃣ Fallback final: si sigue vacío, poner texto genérico
+  if (!businessName) {
+    businessName = 'Negocio';
+  }
 
   try {
     const cancelUrl = `https://api.agenda-connect.com/api/cancelar-cita/${encodeURIComponent(cancelToken || '')}`;
