@@ -14,8 +14,7 @@ router.get('/api/oauth/start', (req, res) => {
   const scope = [
     'https://www.googleapis.com/auth/calendar.events',
     'email',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile'
+    'https://www.googleapis.com/auth/userinfo.email'
   ].join(' ');
 
   const url = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${client_id}&redirect_uri=${redirect_uri}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent&state=${slug}`;
