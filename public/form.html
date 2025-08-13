@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
     :root {
       --primary: #4f8cff;
@@ -28,7 +29,6 @@
       color: var(--text);
     }
 
-    /* Animación de entrada */
     @keyframes fadeSlideUp {
       0% { opacity: 0; transform: translateY(20px); }
       100% { opacity: 1; transform: translateY(0); }
@@ -74,13 +74,11 @@
       transition: all 0.25s ease;
     }
 
-    /* Animación de enfoque */
     input:focus, select:focus {
       box-shadow: 0 0 0 3px var(--primary);
       transform: scale(1.02);
     }
 
-    /* Corregir opciones del select */
     select option {
       background: #1e1e1e;
       color: #fff;
@@ -109,13 +107,88 @@
       background: var(--primary-dark);
       transform: translateY(-2px);
     }
-
+    
     #msg {
       margin-top: 1rem;
       font-size: 0.95rem;
       text-align: center;
       color: #ddd;
     }
+
+/* 🎨 Flatpickr estilo cabecera morada */
+.flatpickr-calendar {
+  background: #1f1b24;
+  border: none;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Cabecera morada */
+.flatpickr-months {
+  background-color: #4c2882;
+  color: white;
+  padding: 0.5rem 0;
+}
+
+.flatpickr-current-month {
+  color: white;
+  font-weight: bold;
+}
+
+.flatpickr-current-month .numInputWrapper input {
+  color: white;
+}
+
+.flatpickr-weekday {
+  color: white !important;
+  font-weight: bold;
+}
+
+/* Días del mes */
+.flatpickr-day {
+  color: #fff;
+  background: transparent;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.flatpickr-day:hover {
+  background: #B0C4DE;
+  color: white;
+}
+
+.flatpickr-day.today {
+  background: #9400D3 !important;
+  color: white
+}
+
+.flatpickr-day.selected {
+  background: #000080 !important;
+  color: white !important;
+}
+
+/* Días no laborables visibles pero deshabilitados */
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.disabled,
+.flatpickr-day.disabled:hover {
+  color: grey !important; /* Texto bien visible */
+  border-radius: 50% !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important; /* Evita que se ponga transparente */
+}
+
+
+
+/* Botones navegación */
+.flatpickr-prev-month, .flatpickr-next-month {
+  color: white;
+  fill: white;
+}
+
+
+
+
   </style>
 </head>
 <body>
@@ -131,7 +204,7 @@
     <input id="phone" placeholder="(000) 000-0000" />
 
     <label>Fecha</label>
-    <input id="date" type="date" />
+    <input id="date" placeholder="Selecciona una fecha" />
 
     <label>Hora</label>
     <select id="time"><option value="">Selecciona primero la fecha…</option></select>
@@ -146,6 +219,7 @@
     </p>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
     const $ = s => document.querySelector(s);
     const api = 'https://api.agenda-connect.com';
@@ -154,6 +228,8 @@
     if (!slug) { $('#msg').textContent = '❌ Falta slug'; $('#btn').disabled = true; }
 
     let cfg = null;
+    let diasLaborables = [];
+
     (async () => {
       try {
         const res = await fetch(`${api}/api/public-config/${slug}`);
@@ -161,26 +237,34 @@
         if (!res.ok || !cfg.nombre) throw new Error(cfg.error || 'Negocio no encontrado');
         $('#negocio').textContent = `Reservar en ${cfg.nombre}`;
 
-        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-        $('#date').min = hoy.toISOString().split('T')[0];
-
-        const diasLaborables = (cfg.work_days || []).map(d => ({
+        diasLaborables = (cfg.work_days || []).map(d => ({
           Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6
         }[d])).filter(d => d !== undefined);
 
-        $('#date').addEventListener('change', e => {
-          if (!e.target.value) return;
-          const [y, m, d] = e.target.value.split('-').map(Number);
-          const fecha = new Date(y, m - 1, d, 12);
-          const dia = fecha.getDay();
-          if (!diasLaborables.includes(dia)) {
-            $('#msg').textContent = '⛔ El negocio no abre ese día';
-            $('#time').innerHTML = '<option></option>';
-            return;
+        flatpickr("#date", {
+          dateFormat: "Y-m-d",
+          minDate: "today",
+          disable: [
+            function(date) {
+              return !diasLaborables.includes(date.getDay());
+            }
+          ],
+          locale: {
+            firstDayOfWeek: 1,
+            weekdays: {
+              shorthand: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+              longhand: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+            },
+            months: {
+              shorthand: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+              longhand: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            }
+          },
+          onChange: function(selectedDates, dateStr) {
+            if (dateStr) cargarHorasDisponibles(dateStr);
           }
-          $('#msg').textContent = '';
-          cargarHorasDisponibles(e.target.value);
         });
+
       } catch (err) {
         console.error(err);
         $('#msg').textContent = err.message;
@@ -206,7 +290,6 @@
 
         const hoy = new Date();
         const hoyISO = hoy.toISOString().split('T')[0];
-
         let horasFiltradas = available_hours;
 
         if (fechaISO === hoyISO) {
@@ -222,7 +305,7 @@
           $('#time').innerHTML = '<option>No hay horas libres</option>';
           $('#time').disabled = true;
           $('#btn').disabled = true;
-          $('#msg').textContent = '⛔ Ya no hay horas disponibles para hoy';
+          $('#msg').textContent = '⛔ Ya no hay horas disponibles para este día';
           return;
         }
 
