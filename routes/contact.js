@@ -1,49 +1,55 @@
-//routes/contact.js
-
+// 📁 routes/contact.js
 import express from "express";
 import nodemailer from "nodemailer";
 
 const router = express.Router();
 
 router.post("/contact", async (req, res) => {
-  const { name, email, message } = req.body;
-
-  // Validación de campos
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: "Todos los campos son obligatorios" });
-  }
-
   try {
-    // Configuración del transporte
+    const { name, email, message } = req.body;
+
+    // 🔍 Validación de campos
+    if (!name || !email || !message) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Todos los campos son obligatorios ❌" });
+    }
+
+    // 📧 Configuración del transporte SMTP
     const transporter = nodemailer.createTransport({
-      service: "gmail", // Puedes cambiar a otro SMTP si usas un proveedor diferente
+      host: process.env.SMTP_HOST || "smtp.gmail.com", // 👈 cambia según tu proveedor
+      port: process.env.SMTP_PORT || 465,
+      secure: process.env.SMTP_SECURE === "true" || true, // true para 465, false para 587
       auth: {
-        user: process.env.EMAIL_USER, // tu correo en variable de entorno
-        pass: process.env.EMAIL_PASS, // tu App Password
+        user: process.env.EMAIL_USER, // tu correo desde .env
+        pass: process.env.EMAIL_PASS, // tu contraseña de app / clave SMTP
       },
     });
 
-    // Opciones del correo
+    // ✉️ Opciones del correo
     const mailOptions = {
       from: `"Agenda Connect" <${process.env.EMAIL_USER}>`,
-      to: "tu-correo@ejemplo.com", // aquí recibes el mensaje
-      subject: "📩 Nuevo mensaje desde la página de Agenda Connect",
+      to: process.env.RECEIVER_EMAIL || process.env.EMAIL_USER, // lo recibes aquí
+      subject: "📩 Nuevo mensaje desde Agenda Connect",
       html: `
         <h2>Nuevo mensaje de contacto</h2>
         <p><b>Nombre:</b> ${name}</p>
         <p><b>Email:</b> ${email}</p>
-        <p><b>Mensaje:</b></p>
-        <p>${message}</p>
+        <p><b>Mensaje:</b><br/>${message}</p>
       `,
     };
 
-    // Enviar correo
+    // 🚀 Enviar correo
     await transporter.sendMail(mailOptions);
 
-    res.status(200).json({ success: "Mensaje enviado correctamente 🚀" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Correo enviado con éxito ✅" });
   } catch (error) {
-    console.error("Error enviando correo:", error);
-    res.status(500).json({ error: "Error al enviar el mensaje" });
+    console.error("❌ Error enviando correo:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Error al enviar el mensaje ❌" });
   }
 });
 
