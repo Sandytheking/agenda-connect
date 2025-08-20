@@ -34,7 +34,7 @@ import updatePlanRoute from './api/update-plan.js';
 import privateConfigRoutes from './routes/private-config.js';
 import userRoute from './routes/user.js';
 import appointmentsCountRoutes from './routes/appointmentsCount.js';
-import contactRouter from "./routes/contact.js";
+import contactRoutes from "./routes/contact.js";
 
 
 
