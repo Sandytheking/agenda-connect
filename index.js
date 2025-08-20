@@ -134,7 +134,8 @@ app.use('/api', updatePlanRoute);
 app.use('/api/private-config', privateConfigRoutes);
 app.use(userRoute);
 app.use('/api/appointments', appointmentsCountRoutes);
-app.use("/api", contactRouter);
+app.use("/api/contact", contactRoutes);
+
 
 
 
