@@ -288,18 +288,21 @@
         const r = await fetch(`${api}/api/available-hours/${slug}?date=${fechaISO}`);
         const { available_hours } = await r.json();
 
-        const hoy = new Date();
-        const hoyISO = hoy.toISOString().split('T')[0];
-        let horasFiltradas = available_hours;
+       const hoy = new Date();
+// "en-CA" genera YYYY-MM-DD en zona horaria local del cliente
+const hoyISO = hoy.toLocaleDateString('en-CA');  
+let horasFiltradas = available_hours;
 
-        if (fechaISO === hoyISO) {
-          const ahora = new Date();
-          const minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
-          horasFiltradas = available_hours.filter(horaStr => {
-            const [h, m] = horaStr.split(':').map(Number);
-            return h * 60 + m > minutosActuales;
-          });
-        }
+if (fechaISO === hoyISO) {
+  const minutosActuales = hoy.getHours() * 60 + hoy.getMinutes();
+
+  horasFiltradas = available_hours.filter(horaStr => {
+    const [h, m] = horaStr.split(':').map(Number);
+    // comparo con la hora local actual
+    return h * 60 + m > minutosActuales;
+  });
+}
+
 
         if (horasFiltradas.length === 0) {
           $('#time').innerHTML = '<option>No hay horas libres</option>';
