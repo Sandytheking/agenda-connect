@@ -282,24 +282,28 @@ await checkAndSendNearLimitEmail({
       const oAuth2Client = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
       oAuth2Client.setCredentials({ access_token: accessToken });
 
-      const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
-      const evento = await calendar.events.insert({
-        calendarId: 'primary',
-        requestBody: {
-          summary: `Cita con ${name}`,
-          description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
-          start: {
-            dateTime: typeof startDT?.toISO === 'function' ? startDT.toISO({ suppressMilliseconds: true }) : (new Date(startDT)).toISOString(),
-            timeZone: timezone
-          },
-          end: {
-            dateTime: typeof endDT?.toISO === 'function' ? endDT.toISO({ suppressMilliseconds: true }) : (new Date(endDT)).toISOString(),
-            timeZone: timezone
-          },
-          attendees: [{ email }],
-          reminders: { useDefault: true }
-        }
-      });
+const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+const evento = await calendar.events.insert({
+  calendarId: 'primary',
+  requestBody: {
+    summary: `Cita con ${name}`,
+    description: `Cliente: ${name}\nEmail: ${email}\nTeléfono: ${phone}`,
+    start: {
+      dateTime: startDT.toISO(),
+      timeZone: timezone || 'America/Santo_Domingo'
+    },
+    end: {
+      dateTime: startDT.plus({ minutes: config.duration_minutes }).toISO(),
+      timeZone: timezone || 'America/Santo_Domingo'
+    },
+    // 👇 Eliminamos esto para que Google no invite al cliente
+    // attendees: [{ email }],
+    reminders: { useDefault: true }
+  },
+  // 👇 aseguramos que Google no mande correos automáticos
+  sendUpdates: 'none'
+});
+
 
       eventoId = evento?.data?.id || null;
       console.log('Evento creado en Google Calendar:', eventoId);
