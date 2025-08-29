@@ -92,7 +92,8 @@ router.post('/api/registro', async (req, res) => {
       work_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
       per_day_config: defaultPerDayConfig,
       subscription_valid_until: fechaVencimiento.toISOString(),
-      activo: true
+      activo: true,
+      timezone: req.body.timezone || "America/Santo_Domingo"
     });
 
     if (insertError) {
