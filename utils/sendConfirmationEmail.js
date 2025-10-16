@@ -21,56 +21,42 @@ const buildConfirmationEmail = (clientName, businessName, appointmentDate, appoi
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Confirmación de cita</title>
   </head>
-  <body style="margin:0;padding:0;background:#f3f4f6;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 0;">
+  <body style="margin:0;padding:0;background:#f5f7fa;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 0;">
       <tr>
         <td align="center">
-          <table role="presentation" width="600" style="max-width:600px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
-            
-            <!-- HEADER -->
+          <table role="presentation" width="600" style="max-width:600px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.08);">
             <tr>
-              <td style="background:#5B21B6;padding:28px;text-align:center;">
-                <img src="https://agenda-connect.com/favicon.png" width="60" style="margin-bottom:10px;" alt="Agenda Connect" />
-                <h1 style="margin:0;color:#fff;font-size:22px;">Cita Confirmada</h1>
-                <p style="margin:4px 0 0;font-size:14px;color:#e9d5ff;">${escapeHtml(businessName)}</p>
+              <td style="background:#4C2882;padding:20px;text-align:center;color:#fff;">
+                <h1 style="margin:0;font-size:20px;">${escapeHtml(businessName)}</h1>
               </td>
             </tr>
-
-            <!-- BODY -->
             <tr>
-              <td style="padding:30px 28px 20px;color:#333;">
-                <p style="font-size:16px;margin:0 0 10px;">Hola <strong>${escapeHtml(clientName)}</strong>,</p>
-                <p style="font-size:15px;margin:0 0 18px;">
-                  Tu cita ha sido confirmada con <strong>${escapeHtml(businessName)}</strong>.
-                </p>
-
-                <div style="background:#f9fafb;padding:16px 20px;border-radius:10px;border:1px solid #eee;margin-bottom:22px;">
-                  <p style="margin:0;font-size:15px;">📅 <strong>Fecha:</strong> ${escapeHtml(appointmentDate)}</p>
-                  <p style="margin:6px 0 0;font-size:15px;">⏰ <strong>Hora:</strong> ${escapeHtml(appointmentTime)}</p>
+              <td style="padding:24px;color:#333;">
+                <p style="margin:0 0 12px;">Hola <strong>${escapeHtml(clientName)}</strong>,</p>
+                <p style="margin:0 0 16px;">Tu cita ha sido confirmada con <strong>${escapeHtml(businessName)}</strong>.</p>
+                <div style="background:#f3f4f6;padding:12px;border-radius:6px;margin-bottom:18px;">
+                  <p style="margin:0;font-size:15px;"><strong>📅 Fecha:</strong> ${escapeHtml(appointmentDate)}</p>
+                  <p style="margin:6px 0 0;font-size:15px;"><strong>⏰ Hora:</strong> ${escapeHtml(appointmentTime)}</p>
                 </div>
-
-                <div style="text-align:center;margin:25px 0;">
-                  <a href="${cancelUrl}"
-                    style="background:#dc2626;color:#fff;text-decoration:none;padding:14px 26px;border-radius:10px;font-weight:600;display:inline-block;transition:opacity .3s;">
+                <div style="text-align:center;margin:18px 0;">
+                  <a href="${cancelUrl}" style="display:inline-block;background:#e11d48;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:600;">
                     ❌ Cancelar cita
                   </a>
                 </div>
-
-                <p style="margin:20px 0 0;font-size:13px;color:#666;line-height:1.5;text-align:center;">
+                <p style="margin:10px 0 0;color:#666;font-size:13px;">
                   Si no puedes ver el botón, copia y pega este enlace en tu navegador:<br/>
-                  <a href="${cancelUrl}" style="color:#5B21B6;word-break:break-all;text-decoration:none;">${cancelUrl}</a>
+                  <span style="word-break:break-all;color:#4C2882;">${cancelUrl}</span>
                 </p>
               </td>
             </tr>
-
-            <!-- FOOTER -->
+              <!-- FOOTER -->
             <tr>
               <td style="background:#0f0f0f;padding:16px;text-align:center;color:#ccc;font-size:12px;">
                 © Agenda Connect — Sistema de gestión de citas<br/>
                 <a href="https://agenda-connect.com" style="color:#a78bfa;text-decoration:none;">agenda-connect.com</a>
               </td>
             </tr>
-
           </table>
         </td>
       </tr>
@@ -79,7 +65,6 @@ const buildConfirmationEmail = (clientName, businessName, appointmentDate, appoi
   </html>
   `;
 };
-
 
 /**
  * HTML para notificar al dueño del negocio
