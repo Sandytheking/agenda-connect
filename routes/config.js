@@ -41,7 +41,7 @@ router.get('/:slug', async (req, res) => {
 //  PUT /api/config/:slug   (protegido)
 // ───────────────────────────────────────────────────────────
 
-router.put('/:slug', verifyAuth, async (req, res) => {
+router.put('/:slug', async (req, res) => {
 
   const { slug } = req.params;
 
