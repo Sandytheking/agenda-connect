@@ -1,6 +1,7 @@
 // 📁 routes/config.js
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from '../middleware/verifyAuth.js';
 import { getConfigBySlug } from '../supabaseClient.js';
 
 
@@ -40,7 +41,7 @@ router.get('/:slug', async (req, res) => {
 //  PUT /api/config/:slug   (protegido)
 // ───────────────────────────────────────────────────────────
 
-router.put('/:slug', async (req, res) => {
+router.put('/:slug', verifyAuth, async (req, res) => {
 
   const { slug } = req.params;
 
