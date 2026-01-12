@@ -43,7 +43,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-image: 
+      background-image:
         radial-gradient(2px 2px at 20px 30px, #4c2882, transparent),
         radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.1), transparent),
         radial-gradient(1px 1px at 90px 40px, #3a2069, transparent),
@@ -376,7 +376,42 @@
     .flatpickr-prev-month:hover, .flatpickr-next-month:hover {
       background: rgba(255, 255, 255, 0.2);
     }
-    </style>
+
+    /* Estilos para el dropdown de sugerencias de email */
+    .email-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0 0 var(--radius) var(--radius);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+      margin-top: -1px;
+    }
+    .email-suggestions div {
+      padding: 0.875rem 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      color: var(--text);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .email-suggestions div:last-child {
+      border-bottom: none;
+    }
+    .email-suggestions div:hover,
+    .email-suggestions div.active {
+      background: rgba(76, 40, 130, 0.3);
+      color: white;
+    }
+    .input-wrapper.email-focused .email-suggestions {
+      display: block;
+    }
+  </style>
 </head>
 <body>
   <div class="card">
@@ -396,12 +431,13 @@
     </div>
     <div class="form-group">
       <label>Email</label>
-      <div class="input-wrapper">
+      <div class="input-wrapper" id="email-wrapper">
         <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
           <polyline points="22,6 12,13 2,6"></polyline>
         </svg>
         <input id="email" type="email" placeholder="tu@correo.com" required />
+        <div class="email-suggestions" id="email-suggestions"></div>
       </div>
     </div>
     <div class="form-group">
@@ -448,12 +484,128 @@
     const api = 'https://api.agenda-connect.com';
     const params = new URLSearchParams(location.search);
     const slug = params.get('slug');
-    if (!slug) { 
-      $('#msg').textContent = '❌ Falta slug'; 
-      $('#btn').disabled = true; 
+    if (!slug) {
+      $('#msg').textContent = '❌ Falta slug';
+      $('#btn').disabled = true;
     }
     let cfg = null;
     let diasLaborables = [];
+
+    // Sugerencias de dominios de email
+    const emailDomains = [
+      '@gmail.com',
+      '@hotmail.com',
+      '@outlook.com',
+      '@yahoo.com',
+      '@icloud.com',
+      '@protonmail.com',
+      '@aol.com',
+      '@yahoo.es',
+      '@live.com',
+      '@me.com',
+      '@zoho.com',
+      '@yandex.com',
+      '@mail.com',
+      '@gmx.com'
+    ];
+
+    // Variables para el autocomplete de email
+    let emailSuggestionsActive = false;
+    let selectedIndex = -1;
+
+    // Función para mostrar sugerencias
+    function showEmailSuggestions(value) {
+      const wrapper = $('#email-wrapper');
+      const suggestions = $('#email-suggestions');
+      const localPart = value.split('@')[0] || '';
+      const hasAt = value.includes('@');
+      const hasDomain = value.includes('@') && value.split('@')[1].length > 0;
+
+      if (hasAt && !hasDomain) {
+        // Mostrar sugerencias completas después de @
+        const filtered = emailDomains.filter(domain => 
+          domain.toLowerCase().startsWith('@' + value.split('@')[1].toLowerCase())
+        );
+        if (filtered.length > 0) {
+          suggestions.innerHTML = filtered.map(domain => `<div data-domain="${domain}">${localPart}${domain}</div>`).join('');
+          wrapper.classList.add('email-focused');
+          emailSuggestionsActive = true;
+          selectedIndex = -1;
+          return;
+        }
+      }
+      hideEmailSuggestions();
+    }
+
+    function hideEmailSuggestions() {
+      const wrapper = $('#email-wrapper');
+      const suggestions = $('#email-suggestions');
+      wrapper.classList.remove('email-focused');
+      suggestions.innerHTML = '';
+      emailSuggestionsActive = false;
+      selectedIndex = -1;
+    }
+
+    // Event listeners para email autocomplete
+    const emailInput = $('#email');
+    emailInput.addEventListener('input', (e) => {
+      const value = e.target.value;
+      if (value.includes('@')) {
+        showEmailSuggestions(value);
+      } else {
+        hideEmailSuggestions();
+      }
+    });
+
+    emailInput.addEventListener('keydown', (e) => {
+      const suggestions = $('#email-suggestions');
+      const items = suggestions.querySelectorAll('div');
+      if (!emailSuggestionsActive || items.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+        updateSelection(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, -1);
+        updateSelection(items);
+      } else if (e.key === 'Enter' && selectedIndex >= 0) {
+        e.preventDefault();
+        selectSuggestion(items[selectedIndex]);
+      } else if (e.key === 'Escape') {
+        hideEmailSuggestions();
+      }
+    });
+
+    function updateSelection(items) {
+      items.forEach((item, idx) => {
+        item.classList.toggle('active', idx === selectedIndex);
+      });
+    }
+
+    function selectSuggestion(item) {
+      const domain = item.dataset.domain;
+      const localPart = emailInput.value.split('@')[0];
+      emailInput.value = localPart + domain;
+      hideEmailSuggestions();
+      emailInput.focus();
+    }
+
+    // Click fuera para cerrar sugerencias
+    document.addEventListener('click', (e) => {
+      if (!emailInput.contains(e.target) && !$('#email-suggestions').contains(e.target)) {
+        hideEmailSuggestions();
+      }
+    });
+
+    // Click en sugerencia
+    document.addEventListener('click', (e) => {
+      if (e.target.dataset.domain) {
+        selectSuggestion(e.target);
+      }
+    });
+
     (async () => {
       try {
         const res = await fetch(`${api}/api/public-config/${slug}`);
@@ -492,12 +644,14 @@
         $('#btn').disabled = true;
       }
     })();
+
     function formato12h(hora24) {
       let [h, m] = hora24.split(':').map(Number);
       const ampm = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
       return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
     }
+
     async function cargarHorasDisponibles(fechaISO) {
       $('#time').innerHTML = '<option>Cargando…</option>';
       $('#time').disabled = true;
@@ -506,16 +660,16 @@
       try {
         const r = await fetch(`${api}/api/available-hours/${slug}?date=${fechaISO}`);
         const { available_hours } = await r.json();
-       const hoy = new Date();
-const hoyISO = hoy.toLocaleDateString('en-CA');
-let horasFiltradas = available_hours;
-if (fechaISO === hoyISO) {
-  const minutosActuales = hoy.getHours() * 60 + hoy.getMinutes();
-  horasFiltradas = available_hours.filter(horaStr => {
-    const [h, m] = horaStr.split(':').map(Number);
-    return h * 60 + m > minutosActuales;
-  });
-}
+        const hoy = new Date();
+        const hoyISO = hoy.toLocaleDateString('en-CA');
+        let horasFiltradas = available_hours;
+        if (fechaISO === hoyISO) {
+          const minutosActuales = hoy.getHours() * 60 + hoy.getMinutes();
+          horasFiltradas = available_hours.filter(horaStr => {
+            const [h, m] = horaStr.split(':').map(Number);
+            return h * 60 + m > minutosActuales;
+          });
+        }
         if (horasFiltradas.length === 0) {
           $('#time').innerHTML = '<option>No hay horas libres</option>';
           $('#time').disabled = true;
@@ -536,6 +690,7 @@ if (fechaISO === hoyISO) {
         $('#msg').className = 'error';
       }
     }
+
     $('#btn').onclick = async () => {
       const name = $('#name').value.trim();
       const email = $('#email').value.trim();
