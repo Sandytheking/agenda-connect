@@ -10,215 +10,310 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
     :root {
-      --primary: #4f8cff;
-      --primary-dark: #3a6fd1;
-      --bg: linear-gradient(135deg, #0f0f0f, #1e1e1e);
+      --primary: #4c2882;
+      --primary-dark: #3a2069;
+      --bg: linear-gradient(135deg, #050507, #0a0a0f);
       --text: #f5f5f5;
-      --radius: 18px;
+      --text-secondary: #a0a0a0;
+      --radius: 16px;
+      --glow: 0 0 20px rgba(76, 40, 130, 0.3);
     }
-
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: 'Inter', sans-serif;
       background: var(--bg);
-      padding: 2rem;
+      padding: 1rem;
       margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       color: var(--text);
+      overflow-x: hidden;
     }
-
+    @media (min-width: 640px) {
+      body { padding: 2rem; }
+    }
     @keyframes fadeSlideUp {
-      0% { opacity: 0; transform: translateY(20px); }
+      0% { opacity: 0; transform: translateY(30px); }
       100% { opacity: 1; transform: translateY(0); }
     }
-
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: var(--glow); }
+      50% { box-shadow: 0 0 30px rgba(76, 40, 130, 0.5); }
+    }
     .card {
       background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(12px);
-      padding: 2.5rem;
+      backdrop-filter: blur(20px);
+      padding: 1.5rem;
       border-radius: var(--radius);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), var(--glow);
       max-width: 480px;
       width: 100%;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      animation: fadeSlideUp 0.6s ease-out;
+      animation: fadeSlideUp 0.7s ease-out;
+      position: relative;
+      overflow: hidden;
     }
-
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    }
+    @media (min-width: 640px) {
+      .card { padding: 2.5rem; }
+    }
     h2#negocio {
-      margin-top: 0;
-      margin-bottom: 1.5rem;
+      margin: 0 0 1.5rem;
       font-family: 'Playfair Display', serif;
-      font-size: 2rem;
+      font-size: 1.75rem;
       font-weight: 700;
       color: #ffffff;
       text-align: center;
+      letter-spacing: -0.5px;
     }
-
+    @media (min-width: 640px) {
+      h2#negocio { font-size: 2rem; }
+    }
+    .form-group {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
     label {
       display: block;
-      margin: 1rem 0 0.5rem;
+      margin-bottom: 0.5rem;
       font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
     }
-
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      fill: var(--text-secondary);
+      z-index: 1;
+    }
     input, select {
       width: 100%;
-      padding: 0.75rem 1rem;
+      padding: 0.875rem 1rem 0.875rem 2.5rem;
       font-size: 1rem;
-      border: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: var(--radius);
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
       outline: none;
-      transition: all 0.25s ease;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
-
     input:focus, select:focus {
-      box-shadow: 0 0 0 3px var(--primary);
-      transform: scale(1.02);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(76, 40, 130, 0.2);
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
     }
-
     select option {
-      background: #1e1e1e;
-      color: #fff;
-      padding: 0.5rem;
+      background: #1a1a1a;
+      color: var(--text);
+      padding: 0.75rem;
     }
-
     input::placeholder {
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--text-secondary);
     }
-
     button {
       width: 100%;
-      padding: 0.85rem;
-      background: var(--primary);
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       border: none;
       border-radius: var(--radius);
       color: white;
       font-weight: 600;
       font-size: 1rem;
-      margin-top: 1.5rem;
+      margin-top: 1rem;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.15s ease;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(76, 40, 130, 0.3);
+      position: relative;
+      overflow: hidden;
     }
-
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+    button:hover::before {
+      left: 100%;
+    }
     button:hover {
-      background: var(--primary-dark);
       transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76, 40, 130, 0.4);
     }
-    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
     #msg {
       margin-top: 1rem;
       font-size: 0.95rem;
       text-align: center;
-      color: #ddd;
+      padding: 0.75rem;
+      border-radius: var(--radius);
+      transition: all 0.3s ease;
     }
-
-/* 🎨 Flatpickr estilo cabecera morada */
-.flatpickr-calendar {
-  background: #1f1b24;
-  border: none;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* Cabecera morada */
-.flatpickr-months {
-  background-color: #4c2882;
-  color: white;
-  padding: 0.5rem 0;
-}
-
-.flatpickr-current-month {
-  color: white;
-  font-weight: bold;
-}
-
-.flatpickr-current-month .numInputWrapper input {
-  color: white;
-}
-
-.flatpickr-weekday {
-  color: white !important;
-  font-weight: bold;
-}
-
-/* Días del mes */
-.flatpickr-day {
-  color: #fff;
-  background: transparent;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
-.flatpickr-day:hover {
-  background: #B0C4DE;
-  color: white;
-}
-
-.flatpickr-day.today {
-  background: #9400D3 !important;
-  color: white
-}
-
-.flatpickr-day.selected {
-  background: #000080 !important;
-  color: white !important;
-}
-
-/* Días no laborables visibles pero deshabilitados */
-.flatpickr-day.flatpickr-disabled,
-.flatpickr-day.disabled,
-.flatpickr-day.disabled:hover {
-  color: grey !important; /* Texto bien visible */
-  border-radius: 50% !important;
-  cursor: not-allowed !important;
-  opacity: 1 !important; /* Evita que se ponga transparente */
-}
-
-
-
-/* Botones navegación */
-.flatpickr-prev-month, .flatpickr-next-month {
-  color: white;
-  fill: white;
-}
-
-
-
-
+    #msg.success {
+      background: rgba(34, 197, 94, 0.2);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    #msg.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    #msg.loading {
+      color: var(--text-secondary);
+    }
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      text-align: center;
+      color: var(--text-secondary);
+      opacity: 0.8;
+    }
+    .footer a {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    .footer a:hover {
+      color: var(--primary-dark);
+    }
+    @media (max-width: 480px) {
+      .card { padding: 1.25rem; }
+      input, select, button { font-size: 0.95rem; padding: 0.75rem 1rem 0.75rem 2.25rem; }
+      h2#negocio { font-size: 1.5rem; }
+      .input-icon { width: 18px; height: 18px; left: 0.75rem; }
+    }
+    /* 🎨 Flatpickr mejorado con tema púrpura */
+    .flatpickr-calendar {
+      background: rgba(30, 30, 30, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), var(--glow);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+    }
+    .flatpickr-months {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 0.75rem;
+    }
+    .flatpickr-current-month {
+      color: white;
+      font-weight: 600;
+    }
+    .flatpickr-current-month .numInputWrapper input {
+      color: white;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+    }
+    .flatpickr-weekday {
+      color: rgba(255, 255, 255, 0.8) !important;
+      font-weight: 600;
+      background: rgba(76, 40, 130, 0.3);
+    }
+    .flatpickr-day {
+      color: var(--text);
+      background: transparent;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+    .flatpickr-day:hover {
+      background: rgba(76, 40, 130, 0.3);
+      border-color: var(--primary);
+      color: white;
+      transform: scale(1.05);
+    }
+    .flatpickr-day.today {
+      background: linear-gradient(135deg, #9400D3, #8B008B) !important;
+      color: white !important;
+      border-color: #9400D3;
+    }
+    .flatpickr-day.selected {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+      color: white !important;
+      border-color: var(--primary);
+      box-shadow: var(--glow);
+    }
+    .flatpickr-day.flatpickr-disabled,
+    .flatpickr-day.disabled,
+    .flatpickr-day.disabled:hover {
+      color: var(--text-secondary) !important;
+      border-radius: 50% !important;
+      cursor: not-allowed !important;
+      opacity: 0.5 !important;
+      background: transparent !important;
+    }
+    .flatpickr-prev-month, .flatpickr-next-month {
+      color: white;
+      fill: white;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      transition: background 0.2s ease;
+    }
+    .flatpickr-prev-month:hover, .flatpickr-next-month:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h2 id="negocio">Reservar cita</h2>
-    <label>Nombre</label>
-    <input id="name" placeholder="Tu nombre" />
-
-    <label>Email</label>
-    <input id="email" type="email" placeholder="correo@ejemplo.com" />
-
-    <label>Teléfono</label>
-    <input id="phone" placeholder="(000) 000-0000" />
-
-    <label>Fecha</label>
-    <input id="date" placeholder="Selecciona una fecha" />
-
-    <label>Hora</label>
-    <select id="time"><option value="">Selecciona primero la fecha…</option></select>
-
-    <button id="btn">Reservar</button>
+    <div class="form-group">
+      <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+      <input id="name" placeholder="Tu nombre completo" required />
+    </div>
+    <div class="form-group">
+      <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6v2l8 5 8-5V6l-8 5z"/></svg>
+      <input id="email" type="email" placeholder="tu@correo.com" required />
+    </div>
+    <div class="form-group">
+      <svg class="input-icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.46 0 1 .63 1 1.37v.54c0 1.08 1.75 2.09 1.81 2.17.15.16.39.15.54 0l1.38-1.38c.19-.19.12-.58-.12-.75l-2.23-2.23c-.19-.19-.51-.11-.7.12-.34.34-.94.56-1.44.56-.31 0-.64-.07-.92-.2-.18-.15-.27-.33-.27-.54v-1.02c0-.66-.4-1.2-.94-1.44-.66-.37-1.52-.58-2.44-.58s-1.78.21-2.44.58c-.54.24-.94.78-.94 1.44v1.02c0 .21-.09.39-.27.54-.28.13-.61.2-.92.2-.5 0-1.1-.22-1.44-.56-.19-.23-.51-.31-.7-.12l-2.23 2.23c-.24.17-.31.56-.12.75l1.38 1.38c.15.15.39.16.54 0 .06-.08 1.81-1.09 1.81-2.17v-.54c0-.74-.54-1.37-1-1.37-.38 0-.89.2-1.42.37-.35-.12-.75-.03-1.02.24l-2.2 2.2z"/></svg>
+      <input id="phone" placeholder="(000) 000-0000" required />
+    </div>
+    <div class="form-group">
+      <svg class="input-icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.89-2-2-2zm0 16H5V9h14v10zm0-12H5V5h14v2zM7 11h5v5H7z"/></svg>
+      <input id="date" placeholder="Selecciona una fecha" readonly required />
+    </div>
+    <div class="form-group">
+      <svg class="input-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+      <select id="time" disabled><option value="">Selecciona primero la fecha…</option></select>
+    </div>
+    <button id="btn" disabled>Reservar Cita</button>
     <div id="msg"></div>
-    <p style="margin-top: 2rem; font-size: 0.9rem; text-align: center; color: #aaa;">
+    <p class="footer">
       Este sistema de reservas es impulsado por<br>
-      <a href="https://www.agenda-connect.com" target="_blank" style="color: #4f8cff; font-weight: bold; text-decoration: none;">
-        Agenda Connect
-      </a>
+      <a href="https://www.agenda-connect.com" target="_blank">Agenda Connect</a>
     </p>
   </div>
-
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
     const $ = s => document.querySelector(s);
@@ -226,21 +321,17 @@
     const params = new URLSearchParams(location.search);
     const slug = params.get('slug');
     if (!slug) { $('#msg').textContent = '❌ Falta slug'; $('#btn').disabled = true; }
-
     let cfg = null;
     let diasLaborables = [];
-
     (async () => {
       try {
         const res = await fetch(`${api}/api/public-config/${slug}`);
         cfg = await res.json();
         if (!res.ok || !cfg.nombre) throw new Error(cfg.error || 'Negocio no encontrado');
         $('#negocio').textContent = `Reservar en ${cfg.nombre}`;
-
         diasLaborables = (cfg.work_days || []).map(d => ({
           Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6
         }[d])).filter(d => d !== undefined);
-
         flatpickr("#date", {
           dateFormat: "Y-m-d",
           minDate: "today",
@@ -264,67 +355,56 @@
             if (dateStr) cargarHorasDisponibles(dateStr);
           }
         });
-
       } catch (err) {
         console.error(err);
         $('#msg').textContent = err.message;
         $('#btn').disabled = true;
       }
     })();
-
     function formato12h(hora24) {
       let [h, m] = hora24.split(':').map(Number);
       const ampm = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
       return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
     }
-
     async function cargarHorasDisponibles(fechaISO) {
       $('#time').innerHTML = '<option>Cargando…</option>';
       $('#time').disabled = true;
       $('#msg').textContent = '';
-
+      $('#msg').className = 'loading';
       try {
         const r = await fetch(`${api}/api/available-hours/${slug}?date=${fechaISO}`);
         const { available_hours } = await r.json();
-
        const hoy = new Date();
-// "en-CA" genera YYYY-MM-DD en zona horaria local del cliente
-const hoyISO = hoy.toLocaleDateString('en-CA');  
+const hoyISO = hoy.toLocaleDateString('en-CA');
 let horasFiltradas = available_hours;
-
 if (fechaISO === hoyISO) {
   const minutosActuales = hoy.getHours() * 60 + hoy.getMinutes();
-
   horasFiltradas = available_hours.filter(horaStr => {
     const [h, m] = horaStr.split(':').map(Number);
-    // comparo con la hora local actual
     return h * 60 + m > minutosActuales;
   });
 }
-
-
         if (horasFiltradas.length === 0) {
           $('#time').innerHTML = '<option>No hay horas libres</option>';
           $('#time').disabled = true;
           $('#btn').disabled = true;
           $('#msg').textContent = '⛔ Ya no hay horas disponibles para este día';
+          $('#msg').className = 'error';
           return;
         }
-
         $('#time').innerHTML = `<option value=""></option>${horasFiltradas.map(h => `<option value="${h}">${formato12h(h)}</option>`).join('')}`;
         $('#time').disabled = false;
         $('#btn').disabled = false;
-
       } catch (err) {
         console.error('❌ Error al cargar horas disponibles:', err);
         $('#time').innerHTML = '<option>Error al cargar</option>';
         $('#time').disabled = true;
         $('#btn').disabled = true;
         $('#msg').textContent = '⛔ Error al cargar las horas';
+        $('#msg').className = 'error';
       }
     }
-
     $('#btn').onclick = async () => {
       const name = $('#name').value.trim();
       const email = $('#email').value.trim();
@@ -333,10 +413,12 @@ if (fechaISO === hoyISO) {
       const time = $('#time').value;
       if (!name || !email || !date || !time) {
         $('#msg').textContent = 'Completa todos los campos';
+        $('#msg').className = 'error';
         return;
       }
       $('#btn').disabled = true;
       $('#msg').textContent = 'Enviando…';
+      $('#msg').className = 'loading';
       const res = await fetch(`${api}/api/citas/${slug}/crear-cita`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -346,9 +428,11 @@ if (fechaISO === hoyISO) {
       $('#btn').disabled = false;
       if (res.ok || res.status === 401) {
         $('#msg').textContent = '✅ Cita creada. Revisa tu correo.';
+        $('#msg').className = 'success';
         $('#btn').style.display = 'none';
       } else {
         $('#msg').textContent = '⛔ ' + (json.error || 'No se pudo crear la cita');
+        $('#msg').className = 'error';
       }
     };
   </script>
