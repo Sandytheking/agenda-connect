@@ -1,7 +1,18 @@
-// 📁 utils/sendCancellationNotification.js
+// 📁 utils/sendCancellationNotification.js (actualizado)
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+/**
+ * Helper para formatear hora a 12h con AM/PM
+ */
+function formatTimeTo12h(timeStr) {
+  if (!timeStr || !timeStr.includes(':')) return timeStr; // Fallback si no es válido
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const h12 = hours % 12 || 12; // Convierte 0 a 12
+  return `${h12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
 
 /**
  * Escapar HTML para seguridad
@@ -16,9 +27,10 @@ function escapeHtml(str) {
 }
 
 /**
- * HTML para notificar cancelación al dueño (versión mejorada: responsive, gradientes, diseño moderno)
+ * HTML para notificar cancelación al dueño (sin cambios)
  */
 const buildCancellationNotificationEmail = (cliente, fecha, hora, negocio) => {
+  const formattedHour = formatTimeTo12h(hora); // ← Nueva línea: formatea aquí
   return `
     <!DOCTYPE html>
     <html lang="es" style="margin: 0; padding: 0;">
@@ -47,7 +59,7 @@ const buildCancellationNotificationEmail = (cliente, fecha, hora, negocio) => {
             <ul style="margin: 0; padding-left: 20px; color: #721c24;">
               <li><strong>Cliente:</strong> ${escapeHtml(cliente)}</li>
               <li><strong>Fecha:</strong> ${escapeHtml(fecha)}</li>
-              <li><strong>Hora:</strong> ${escapeHtml(hora)}</li>
+              <li><strong>Hora:</strong> ${escapeHtml(formattedHour)}</li> <!-- ← Usa el formateado -->
               <li><strong>Negocio:</strong> ${escapeHtml(negocio)}</li>
             </ul>
           </div>
@@ -58,7 +70,7 @@ const buildCancellationNotificationEmail = (cliente, fecha, hora, negocio) => {
         <!-- Footer -->
         <div style="padding: 20px 30px; background: rgba(0,0,0,0.05); text-align: center; color: #666; font-size: 0.9em; border-top: 1px solid rgba(255,255,255,0.2);">
           <p style="margin: 0 0 10px;">— El equipo de <strong>AgendaConnect</strong></p>
-          <p style="margin: 0;"><a href="mailto:support@agenda-connect.com" style="color: #667eea; text-decoration: none;">support@agenda-connect.com</a> | <a href="https://agenda-connect.com" style="color: #667eea; text-decoration: none;">Visita nuestro sitio</a></p>
+          <p style="margin: 0;"><a href="mailto:agendaconnectinfo@gmail.com" style="color: #667eea; text-decoration: none;">support@agenda-connect.com</a> | <a href="https://agenda-connect.com" style="color: #667eea; text-decoration: none;">Visita nuestro sitio</a></p>
           <p style="margin: 10px 0 0; font-size: 0.8em;">Notificación automática. <a href="#" style="color: #999;">Darte de baja</a></p>
         </div>
       </div>
