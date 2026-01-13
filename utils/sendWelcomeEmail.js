@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 export async function sendWelcomeEmail({ to, name, slug }) {
   const link = `https://api.agenda-connect.com/form.html?slug=${slug}`;
   
-  const transporter = nodemailer.createTransporter({
+  const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT),
     secure: false,
