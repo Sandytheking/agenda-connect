@@ -76,10 +76,6 @@ export async function sendCancellationNotification({ to, cliente, fecha, hora, n
       html: buildCancellationNotificationEmail(cliente, fecha, hora, negocio),
     });
     console.log(`📧 Notificación de cancelación enviada exitosamente a ${to}`);
-  } subject: `🗑️ Cita cancelada por el cliente en ${negocio}`,
-      html: buildCancellationNotificationEmail(cliente, fecha, hora, negocio),
-    });
-    console.log(`📧 Notificación de cancelación enviada exitosamente a ${to}`);
   } catch (error) {
     console.error('❌ Error al enviar notificación de cancelación:', error.message);
   }
