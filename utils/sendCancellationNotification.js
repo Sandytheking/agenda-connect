@@ -70,7 +70,7 @@ const buildCancellationNotificationEmail = (cliente, fecha, hora, negocio) => {
         <!-- Footer -->
         <div style="padding: 20px 30px; background: rgba(0,0,0,0.05); text-align: center; color: #666; font-size: 0.9em; border-top: 1px solid rgba(255,255,255,0.2);">
           <p style="margin: 0 0 10px;">— El equipo de <strong>AgendaConnect</strong></p>
-          <p style="margin: 0;"><a href="mailto:agendaconnectinfo@gmail.com" style="color: #667eea; text-decoration: none;">support@agenda-connect.com</a> | <a href="https://agenda-connect.com" style="color: #667eea; text-decoration: none;">Visita nuestro sitio</a></p>
+          <p style="margin: 0;"><a href="mailto:agendaconnectinfo@gmail.com" style="color: #667eea; text-decoration: none;">agendaconnectinfo@gmail.com</a> | <a href="https://agenda-connect.com" style="color: #667eea; text-decoration: none;">Visita nuestro sitio</a></p>
           <p style="margin: 10px 0 0; font-size: 0.8em;">Notificación automática. <a href="#" style="color: #999;">Darte de baja</a></p>
         </div>
       </div>
